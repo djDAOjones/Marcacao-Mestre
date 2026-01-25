@@ -2,7 +2,7 @@ import { PitchShifter } from 'soundtouchjs';
 import type { Track, BeatMap } from '../types';
 import { getNativeBpm, getBeatPositionAtTime, type BeatPosition } from './beatScheduler';
 
-export type DeckState = 'idle' | 'loading' | 'playing' | 'fading-in' | 'fading-out';
+export type DeckState = 'idle' | 'loading' | 'playing' | 'paused' | 'fading-in' | 'fading-out';
 
 export interface DeckStatus {
   state: DeckState;
@@ -24,6 +24,7 @@ export class Deck {
   private state: DeckState = 'idle';
   private playbackRate: number = 1.0;
   private volume: number = 1.0;
+  private pausedAt: number = 0; // Track position when paused
   
   constructor(audioContext: AudioContext, outputNode: AudioNode) {
     this.audioContext = audioContext;
@@ -69,7 +70,23 @@ export class Deck {
       this.shifter.disconnect();
       this.shifter = null;
     }
+    this.pausedAt = 0;
     this.state = 'idle';
+  }
+
+  pause(): void {
+    if (!this.shifter || !this.audioBuffer) return;
+    if (this.state !== 'playing' && this.state !== 'fading-in' && this.state !== 'fading-out') return;
+    
+    this.pausedAt = this.getCurrentTime();
+    this.shifter.disconnect();
+    this.shifter = null;
+    this.state = 'paused';
+  }
+
+  resume(): void {
+    if (this.state !== 'paused' || !this.audioBuffer) return;
+    this.play(this.pausedAt);
   }
 
   setVolume(volume: number, rampTime: number = 0): void {
@@ -135,6 +152,10 @@ export class Deck {
 
   isPlaying(): boolean {
     return this.state === 'playing' || this.state === 'fading-in' || this.state === 'fading-out';
+  }
+
+  isPaused(): boolean {
+    return this.state === 'paused';
   }
 
   isFinished(): boolean {

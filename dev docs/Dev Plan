@@ -1,0 +1,80 @@
+# Marcação Mestre — Development Plan v1
+
+## Overview
+Build a PWA beat-matched grid player for Capoeira classes per Spec v2.
+
+## Phases
+
+### Phase 1: Core Playback (MVP)
+- [x] Project setup (Vite + React + TypeScript + Tailwind)
+- [x] ZIP upload + manifest parsing
+- [x] MIDI tempo track parser
+- [x] IndexedDB storage layer (Dexie.js)
+- [x] Basic grid UI with button states
+- [x] Single-track playback (no transitions)
+- [x] Duck control
+
+**Deliverable:** User can upload ZIP, see grid, tap to play one track at a time.
+
+---
+
+### Phase 2: Transitions
+- [x] SoundTouchJS integration for time-stretching
+- [x] Beat scheduler (downbeat detection)
+- [x] Quantise ON mode (locked BPM transitions)
+- [x] Equal-power crossfade
+- [x] Transport status display (NOW/NEXT/STATUS)
+- [x] Dual-deck engine architecture
+
+**Deliverable:** Beat-matched crossfades at locked BPM.
+
+---
+
+### Phase 3: Tempo Slide
+- [x] Quantise OFF mode (tempo slide algorithm)
+- [x] Dual-deck synchronised tempo ramping
+- [ ] Polish transition smoothness
+
+**Deliverable:** Smooth tempo-sliding transitions.
+
+---
+
+### Phase 4: UX Polish (from Gap Analysis)
+- [x] Fix: Audible crossfade not working (CHG-03) — fixed isPlaying condition
+- [ ] Track click behaviour:
+  - [ ] Single click: add to end of queue
+  - [ ] Double click: insert as next track
+  - [ ] Triple click: mix immediately
+- [ ] Multi-track queue with per-track mix settings
+- [ ] Default Quantise OFF
+- [ ] Mix duration options: 0/1/2/4/8 bars (default 2)
+- [ ] Drag-and-drop upload
+- [ ] Pause button
+- [ ] Duck ramp (1000ms fade)
+- [ ] Duck EQ (4kHz -12dB Q=1 during duck)
+- [ ] BPM click-to-type input
+
+**Deliverable:** Polished controls matching spec v3.
+
+---
+
+### Phase 5: PWA & Offline
+- [ ] Service worker + offline caching
+- [ ] Install prompt / Add to Home Screen
+- [ ] Touch optimisation + large hit targets
+- [ ] Tablet layout testing
+- [ ] Error handling + validation feedback
+
+**Deliverable:** Installable, offline-capable app optimised for tablets.
+
+---
+
+### Phase 6: Future (v2+)
+- [ ] Multi-track queue list with per-transition settings
+- [ ] Queue editing (reorder, delete, modify)
+- [ ] Alternative stretch engine (Rubberband WASM for desktop)
+
+---
+
+## Current Status
+**Phase 3 mostly complete, Phase 4 next**

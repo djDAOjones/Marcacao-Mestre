@@ -14,6 +14,7 @@ export interface TransportState {
   mixProgress: number;
   mixLengthBars: number;
   beatPosition: BeatPosition | null;
+  isPaused: boolean;
 }
 
 export type MixLengthBars = 0 | 1 | 2 | 4 | 8;
@@ -437,6 +438,7 @@ class DualDeckEngine {
       mixProgress,
       mixLengthBars: this.config.mixLengthBars,
       beatPosition: activeDeck?.getStatus().beatPosition ?? null,
+      isPaused: activeDeck?.isPaused() ?? false,
     };
   }
 
@@ -459,6 +461,31 @@ class DualDeckEngine {
   async resume(): Promise<void> {
     if (this.audioContext?.state === 'suspended') {
       await this.audioContext.resume();
+    }
+  }
+
+  pause(): void {
+    const activeDeck = this.getActiveDeck();
+    if (activeDeck?.isPlaying()) {
+      activeDeck.pause();
+      console.log('[DualDeck] Paused');
+    }
+  }
+
+  resumePlayback(): void {
+    const activeDeck = this.getActiveDeck();
+    if (activeDeck?.isPaused()) {
+      activeDeck.resume();
+      console.log('[DualDeck] Resumed');
+    }
+  }
+
+  togglePause(): void {
+    const activeDeck = this.getActiveDeck();
+    if (activeDeck?.isPaused()) {
+      this.resumePlayback();
+    } else if (activeDeck?.isPlaying()) {
+      this.pause();
     }
   }
 

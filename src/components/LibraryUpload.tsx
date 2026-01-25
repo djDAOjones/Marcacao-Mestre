@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Upload, Loader2, AlertCircle } from 'lucide-react';
 import { loadZipLibrary } from '../lib/zipLoader';
 import { saveLibrary } from '../lib/db';
@@ -11,11 +11,14 @@ interface LibraryUploadProps {
 export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processFile = useCallback(async (file: File) => {
+    if (!file.name.endsWith('.zip')) {
+      setError('Please upload a .zip file');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -28,11 +31,40 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
       setError(err instanceof Error ? err.message : 'Failed to load library');
     } finally {
       setIsLoading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    }
+  }, [onLibraryLoaded]);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      await processFile(file);
+    }
+  }, [processFile]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
@@ -53,13 +85,18 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
 
         <label
           htmlFor="library-upload"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={`
             flex flex-col items-center justify-center
             w-full h-48 border-2 border-dashed rounded-xl
             cursor-pointer transition-colors
             ${isLoading 
               ? 'border-gray-600 bg-gray-800/50' 
-              : 'border-gray-600 hover:border-blue-500 hover:bg-gray-800/30'}
+              : isDragging
+                ? 'border-blue-400 bg-blue-900/30 scale-105'
+                : 'border-gray-600 hover:border-blue-500 hover:bg-gray-800/30'}
           `}
         >
           {isLoading ? (
@@ -67,11 +104,18 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
               <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
               <span className="text-gray-400">Loading library...</span>
             </>
+          ) : isDragging ? (
+            <>
+              <Upload className="w-12 h-12 text-blue-400 mb-4" />
+              <span className="text-blue-300 font-medium">
+                Drop to load library
+              </span>
+            </>
           ) : (
             <>
               <Upload className="w-12 h-12 text-gray-500 mb-4" />
               <span className="text-gray-300 font-medium">
-                Click to upload library.zip
+                Click or drag to upload library.zip
               </span>
               <span className="text-gray-500 text-sm mt-2">
                 Contains MP3s, MIDI beat maps, and manifest.json

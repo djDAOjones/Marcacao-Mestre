@@ -25,6 +25,7 @@ function App() {
     mixProgress: 0,
     mixLengthBars: 2,
     beatPosition: null,
+    isPaused: false,
   });
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
@@ -99,6 +100,10 @@ function App() {
     dualDeckEngine.stop();
   }, []);
 
+  const handleTogglePause = useCallback(() => {
+    dualDeckEngine.togglePause();
+  }, []);
+
   const handleSettingsChange = useCallback((changes: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...changes }));
   }, []);
@@ -121,6 +126,7 @@ function App() {
         settings={settings}
         onSettingsChange={handleSettingsChange}
         onStop={handleStop}
+        onTogglePause={handleTogglePause}
         onBpmChange={handleBpmChange}
       />
       <main className="flex-1 overflow-auto">

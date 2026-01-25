@@ -1,4 +1,4 @@
-import { Square, Volume2, VolumeX, Minus, Plus } from 'lucide-react';
+import { Square, Pause, Play, Volume2, VolumeX, Minus, Plus } from 'lucide-react';
 import type { AppSettings } from '../types';
 import type { TransportState } from '../lib/dualDeckEngine';
 
@@ -7,6 +7,7 @@ export interface ControlBarProps {
   settings: AppSettings;
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   onStop: () => void;
+  onTogglePause: () => void;
   onBpmChange: (bpm: number) => void;
 }
 
@@ -15,6 +16,7 @@ export function ControlBar({
   settings,
   onSettingsChange,
   onStop,
+  onTogglePause,
   onBpmChange,
 }: ControlBarProps) {
   const mixLengths: Array<0 | 1 | 2 | 4 | 8> = [0, 1, 2, 4, 8];
@@ -22,7 +24,7 @@ export function ControlBar({
   const getStatusText = () => {
     switch (transportState.phase) {
       case 'idle': return 'STOPPED';
-      case 'playing': return 'PLAYING';
+      case 'playing': return transportState.isPaused ? 'PAUSED' : 'PLAYING';
       case 'queued': return 'QUEUED';
       case 'mixing': 
         const barsLeft = Math.ceil((1 - transportState.mixProgress) * transportState.mixLengthBars);
@@ -33,7 +35,7 @@ export function ControlBar({
   const getStatusColor = () => {
     switch (transportState.phase) {
       case 'idle': return 'text-gray-400';
-      case 'playing': return 'text-green-400';
+      case 'playing': return transportState.isPaused ? 'text-yellow-400' : 'text-green-400';
       case 'queued': return 'text-amber-400';
       case 'mixing': return 'text-blue-400';
     }
@@ -137,15 +139,36 @@ export function ControlBar({
           </button>
         </div>
 
-        {/* Stop Button */}
-        <button
-          onClick={onStop}
-          className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 
-                     text-white font-bold rounded-lg transition-colors"
-        >
-          <Square size={18} fill="currentColor" />
-          STOP
-        </button>
+        {/* Transport Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Pause/Resume Button */}
+          <button
+            onClick={onTogglePause}
+            disabled={transportState.phase === 'idle'}
+            className={`
+              flex items-center gap-2 px-6 py-2 font-bold rounded-lg transition-colors
+              ${transportState.phase === 'idle'
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : transportState.isPaused
+                  ? 'bg-green-600 hover:bg-green-500 text-white'
+                  : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+              }
+            `}
+          >
+            {transportState.isPaused ? <Play size={18} /> : <Pause size={18} />}
+            {transportState.isPaused ? 'PLAY' : 'PAUSE'}
+          </button>
+
+          {/* Stop Button */}
+          <button
+            onClick={onStop}
+            className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 
+                       text-white font-bold rounded-lg transition-colors"
+          >
+            <Square size={18} fill="currentColor" />
+            STOP
+          </button>
+        </div>
       </div>
     </div>
   );
