@@ -198,19 +198,24 @@ class DualDeckEngine {
     console.log(`[DualDeck] Phase -> mixing, incoming track: ${this.activeQueueItem.track.name}`);
   }
 
-  /** Execute immediate CUT transition with 50ms micro-fade */
+  /** Execute bar-aligned CUT transition with 50ms micro-fade and beat sync */
   private executeCut(activeDeck: Deck, inactiveDeck: Deck): void {
     if (!this.activeQueueItem || !this.audioContext) return;
     
-    console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name}`);
+    const outgoingBpm = activeDeck.getEffectiveBpm();
+    const incomingNativeBpm = inactiveDeck.getNativeBpm();
+    
+    console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name} (synced at ${outgoingBpm.toFixed(1)} BPM)`);
     
     // 50ms micro-fade to avoid click
     const fadeTime = 0.05;
     activeDeck.setVolume(0, fadeTime);
     
-    // Start incoming at native BPM
-    inactiveDeck.setPlaybackRate(1);
+    // Start incoming at outgoing track's tempo (beat-matched)
+    const playbackRate = outgoingBpm / incomingNativeBpm;
+    inactiveDeck.setPlaybackRate(playbackRate);
     inactiveDeck.setVolume(1);
+    // Start at position 0 (first downbeat of incoming track aligns with bar onset)
     inactiveDeck.play(0);
     inactiveDeck.setState('playing');
     
@@ -220,9 +225,9 @@ class DualDeckEngine {
       activeDeck.setVolume(1);
     }, fadeTime * 1000);
     
-    // Swap active deck
+    // Swap active deck - keep current BPM (beat-matched)
     this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
-    this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
+    // targetBpm stays at outgoing tempo (tracks are beat-matched)
     this.phase = 'playing';
     this.activeQueueItem = null;
     this.advanceQueue();
