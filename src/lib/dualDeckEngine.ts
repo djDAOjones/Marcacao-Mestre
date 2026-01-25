@@ -1,4 +1,4 @@
-import type { Track, QueueItem } from '../types';
+import type { Track, QueueItem, TransitionMode } from '../types';
 import { Deck } from './deck';
 import { getNextDownbeat, getNativeBpm, type BeatPosition } from './beatScheduler';
 
@@ -12,16 +12,17 @@ export interface TransportState {
   currentBpm: number;
   targetBpm: number;
   mixProgress: number;
-  mixLengthBars: number;
+  transitionMode: TransitionMode;
   beatPosition: BeatPosition | null;
   isPaused: boolean;
 }
 
-export type MixLengthBars = 0 | 1 | 2 | 4 | 8;
-
+/**
+ * Engine configuration (v4 simplified)
+ * - transitionMode: 'mix' = 2-bar quantised crossfade, 'cut' = 50ms micro-fade
+ */
 export interface EngineConfig {
-  quantiseOn: boolean;
-  mixLengthBars: MixLengthBars;
+  transitionMode: TransitionMode;
   duckLevel: number;
 }
 
@@ -41,10 +42,13 @@ class DualDeckEngine {
   private queueIdCounter: number = 0;
   
   private config: EngineConfig = {
-    quantiseOn: false,
-    mixLengthBars: 2,
+    transitionMode: 'mix',
     duckLevel: 0.18,
   };
+  
+  // Pause state for fade/rewind behaviour
+  private pauseFadeTime = 0.5;    // 500ms fade
+  private resumeRewindTime = 1.0; // 1s rewind on resume
   
   private isDucked: boolean = false;
   private targetBpm: number = 120;
@@ -103,27 +107,19 @@ class DualDeckEngine {
       activeDeck?.setVolume(outVolume);
       inactiveDeck?.setVolume(inVolume);
       
-      // Handle tempo during mix
-      if (this.config.quantiseOn) {
-        // Both decks play at target BPM
-        const rate = this.targetBpm / (activeDeck?.getNativeBpm() ?? 120);
-        activeDeck?.setPlaybackRate(rate);
-        const incomingRate = this.targetBpm / (inactiveDeck?.getNativeBpm() ?? 120);
-        inactiveDeck?.setPlaybackRate(incomingRate);
-      } else {
-        // Tempo slide: interpolate from current native to incoming native
-        const currentNative = activeDeck?.getNativeBpm() ?? 120;
-        const incomingNative = inactiveDeck?.getNativeBpm() ?? 120;
-        const slidingBpm = currentNative + (incomingNative - currentNative) * progress;
-        
-        const outRate = slidingBpm / currentNative;
-        const inRate = slidingBpm / incomingNative;
-        
-        activeDeck?.setPlaybackRate(outRate);
-        inactiveDeck?.setPlaybackRate(inRate);
-        
-        this.targetBpm = slidingBpm;
-      }
+      // Handle tempo during mix (MIX mode uses tempo slide)
+      // Tempo slide: interpolate from current native to incoming native
+      const currentNative = activeDeck?.getNativeBpm() ?? 120;
+      const incomingNative = inactiveDeck?.getNativeBpm() ?? 120;
+      const slidingBpm = currentNative + (incomingNative - currentNative) * progress;
+      
+      const outRate = slidingBpm / currentNative;
+      const inRate = slidingBpm / incomingNative;
+      
+      activeDeck?.setPlaybackRate(outRate);
+      inactiveDeck?.setPlaybackRate(inRate);
+      
+      this.targetBpm = slidingBpm;
       
       // Mix complete
       if (progress >= 1) {
@@ -170,41 +166,26 @@ class DualDeckEngine {
       return;
     }
     
-    // Set playback rate for incoming track
-    if (this.config.quantiseOn) {
-      const incomingRate = this.targetBpm / inactiveDeck.getNativeBpm();
-      inactiveDeck.setPlaybackRate(incomingRate);
-    } else {
-      // Start at current track's tempo (will slide during mix if applicable)
-      const currentRate = activeDeck.getNativeBpm() / inactiveDeck.getNativeBpm();
-      inactiveDeck.setPlaybackRate(currentRate);
-    }
-    
-    // Handle hard cut (mixLengthBars = 0)
-    if (this.config.mixLengthBars === 0) {
-      console.log(`[DualDeck] Hard cut to: ${this.activeQueueItem.track.name}`);
-      activeDeck.stop();
-      inactiveDeck.setVolume(1);
-      inactiveDeck.play(0);
-      inactiveDeck.setState('playing');
-      this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
-      if (!this.config.quantiseOn) {
-        this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
-      }
-      this.phase = 'playing';
-      this.activeQueueItem = null;
-      this.advanceQueue();
+    // CUT mode: 50ms micro-fade immediate switch
+    if (this.config.transitionMode === 'cut') {
+      this.executeCut(activeDeck, inactiveDeck);
       return;
     }
     
-    // Calculate mix duration in seconds
+    // MIX mode: 2-bar quantised crossfade with tempo slide
+    // Start incoming at current track's tempo (will slide during mix)
+    const currentRate = activeDeck.getNativeBpm() / inactiveDeck.getNativeBpm();
+    inactiveDeck.setPlaybackRate(currentRate);
+    
+    // Calculate mix duration: 2 bars
     const beatMap = activeDeck.getBeatMap();
-    const bpm = this.config.quantiseOn ? this.targetBpm : activeDeck.getEffectiveBpm();
+    const bpm = activeDeck.getEffectiveBpm();
     const beatsPerBar = beatMap?.timeSignature.numerator ?? 4;
     const barDuration = (60 / bpm) * beatsPerBar;
-    this.mixDuration = barDuration * this.config.mixLengthBars;
+    const mixBars = 2;
+    this.mixDuration = barDuration * mixBars;
     
-    console.log(`[DualDeck] Mix starting: ${this.config.mixLengthBars} bars = ${this.mixDuration.toFixed(2)}s at ${bpm.toFixed(1)} BPM`);
+    console.log(`[DualDeck] MIX starting: ${mixBars} bars = ${this.mixDuration.toFixed(2)}s at ${bpm.toFixed(1)} BPM`);
     this.mixStartTime = this.audioContext.currentTime;
     
     // Start incoming deck at zero volume for crossfade
@@ -215,6 +196,36 @@ class DualDeckEngine {
     
     this.phase = 'mixing';
     console.log(`[DualDeck] Phase -> mixing, incoming track: ${this.activeQueueItem.track.name}`);
+  }
+
+  /** Execute immediate CUT transition with 50ms micro-fade */
+  private executeCut(activeDeck: Deck, inactiveDeck: Deck): void {
+    if (!this.activeQueueItem || !this.audioContext) return;
+    
+    console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name}`);
+    
+    // 50ms micro-fade to avoid click
+    const fadeTime = 0.05;
+    activeDeck.setVolume(0, fadeTime);
+    
+    // Start incoming at native BPM
+    inactiveDeck.setPlaybackRate(1);
+    inactiveDeck.setVolume(1);
+    inactiveDeck.play(0);
+    inactiveDeck.setState('playing');
+    
+    // Stop outgoing after micro-fade
+    setTimeout(() => {
+      activeDeck.stop();
+      activeDeck.setVolume(1);
+    }, fadeTime * 1000);
+    
+    // Swap active deck
+    this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
+    this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
+    this.phase = 'playing';
+    this.activeQueueItem = null;
+    this.advanceQueue();
   }
 
   private completeMix(): void {
@@ -232,10 +243,8 @@ class DualDeckEngine {
     // Swap active deck
     this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
     
-    // Update target BPM if not quantised
-    if (!this.config.quantiseOn) {
-      this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
-    }
+    // Update target BPM to new track's native BPM
+    this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
     
     this.phase = 'playing';
     console.log(`[DualDeck] Mix complete, now playing: ${this.getActiveDeck()?.getTrack()?.name}`);
@@ -297,16 +306,9 @@ class DualDeckEngine {
     await deck.loadTrack(track);
     console.log(`[DualDeck] Track loaded into deck`);
     
-    // Set initial BPM
-    this.targetBpm = this.config.quantiseOn ? this.targetBpm : getNativeBpm(track.beatMap);
-    
-    if (this.config.quantiseOn) {
-      const rate = this.targetBpm / deck.getNativeBpm();
-      deck.setPlaybackRate(rate);
-    } else {
-      deck.setPlaybackRate(1);
-      this.targetBpm = deck.getNativeBpm();
-    }
+    // Play at native BPM (no stretching on initial play)
+    deck.setPlaybackRate(1);
+    this.targetBpm = getNativeBpm(track.beatMap);
     
     deck.setVolume(1);
     deck.play(0);
@@ -319,8 +321,7 @@ class DualDeckEngine {
       id: `q-${++this.queueIdCounter}`,
       track,
       settings: {
-        mixLengthBars: this.config.mixLengthBars,
-        quantiseOn: this.config.quantiseOn,
+        transitionMode: this.config.transitionMode,
         targetBpm: this.targetBpm,
       },
       queuedAt: Date.now(),
@@ -340,15 +341,14 @@ class DualDeckEngine {
     }
   }
 
-  /** Queue a track for immediate transition (legacy compatibility) */
+  /** Queue a track for immediate transition */
   async queueTrack(track: Track): Promise<void> {
     // Create queue item and prepare immediately
     const queueItem: QueueItem = {
       id: `q-${++this.queueIdCounter}`,
       track,
       settings: {
-        mixLengthBars: this.config.mixLengthBars,
-        quantiseOn: this.config.quantiseOn,
+        transitionMode: this.config.transitionMode,
         targetBpm: this.targetBpm,
       },
       queuedAt: Date.now(),
@@ -405,14 +405,6 @@ class DualDeckEngine {
 
   setTargetBpm(bpm: number): void {
     this.targetBpm = Math.max(60, Math.min(200, bpm));
-    
-    if (this.config.quantiseOn && this.phase === 'playing') {
-      const activeDeck = this.getActiveDeck();
-      if (activeDeck) {
-        const rate = this.targetBpm / activeDeck.getNativeBpm();
-        activeDeck.setPlaybackRate(rate);
-      }
-    }
   }
 
   setConfig(config: Partial<EngineConfig>): void {
@@ -436,7 +428,7 @@ class DualDeckEngine {
       currentBpm: activeDeck?.getEffectiveBpm() ?? this.targetBpm,
       targetBpm: this.targetBpm,
       mixProgress,
-      mixLengthBars: this.config.mixLengthBars,
+      transitionMode: this.config.transitionMode,
       beatPosition: activeDeck?.getStatus().beatPosition ?? null,
       isPaused: activeDeck?.isPaused() ?? false,
     };
@@ -464,20 +456,34 @@ class DualDeckEngine {
     }
   }
 
+  /** Global pause with 0.5s fade-down */
   pause(): void {
     const activeDeck = this.getActiveDeck();
-    if (activeDeck?.isPlaying()) {
+    if (!activeDeck?.isPlaying() || !this.audioContext) return;
+    
+    // Fade down over 0.5s then pause
+    activeDeck.setVolume(0, this.pauseFadeTime);
+    setTimeout(() => {
       activeDeck.pause();
-      console.log('[DualDeck] Paused');
-    }
+      activeDeck.setVolume(1); // Reset volume for resume
+      console.log('[DualDeck] Paused with fade');
+    }, this.pauseFadeTime * 1000);
   }
 
+  /** Resume with 1s rewind and 0.5s fade-up */
   resumePlayback(): void {
     const activeDeck = this.getActiveDeck();
-    if (activeDeck?.isPaused()) {
-      activeDeck.resume();
-      console.log('[DualDeck] Resumed');
-    }
+    if (!activeDeck?.isPaused()) return;
+    
+    // Rewind 1s (clamped to 0)
+    const currentPos = activeDeck.getCurrentTime();
+    const rewindPos = Math.max(0, currentPos - this.resumeRewindTime);
+    
+    // Start at zero volume and fade up
+    activeDeck.setVolume(0);
+    activeDeck.resume(rewindPos);
+    activeDeck.setVolume(1, this.pauseFadeTime);
+    console.log(`[DualDeck] Resumed from ${rewindPos.toFixed(2)}s with fade`);
   }
 
   togglePause(): void {
@@ -486,6 +492,18 @@ class DualDeckEngine {
       this.resumePlayback();
     } else if (activeDeck?.isPlaying()) {
       this.pause();
+    }
+  }
+
+  /** Trigger next queued track transition immediately */
+  triggerNext(): void {
+    if (this.phase === 'queued' && this.activeQueueItem) {
+      this.pendingMixTime = null;
+      this.startMix();
+      console.log('[DualDeck] Next triggered manually');
+    } else if (this.queue.length > 0) {
+      // If nothing queued but items in queue, advance and trigger
+      this.advanceQueue();
     }
   }
 

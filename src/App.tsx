@@ -6,8 +6,7 @@ import { dualDeckEngine, type TransportState } from './lib/dualDeckEngine';
 import type { Library, Track, AppSettings } from './types';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  quantiseOn: false,
-  mixLengthBars: 2,
+  transitionMode: 'mix',
   duckOn: false,
   duckLevel: 0.18,
 };
@@ -23,7 +22,7 @@ function App() {
     currentBpm: 120,
     targetBpm: 120,
     mixProgress: 0,
-    mixLengthBars: 2,
+    transitionMode: 'mix',
     beatPosition: null,
     isPaused: false,
   });
@@ -47,11 +46,10 @@ function App() {
 
   useEffect(() => {
     dualDeckEngine.setConfig({
-      quantiseOn: settings.quantiseOn,
-      mixLengthBars: settings.mixLengthBars,
+      transitionMode: settings.transitionMode,
       duckLevel: settings.duckLevel,
     });
-  }, [settings.quantiseOn, settings.mixLengthBars, settings.duckLevel]);
+  }, [settings.transitionMode, settings.duckLevel]);
 
   const handleLibraryLoaded = useCallback((lib: Library, loadedTracks: Track[]) => {
     setLibrary(lib);
@@ -108,8 +106,8 @@ function App() {
     setSettings(prev => ({ ...prev, ...changes }));
   }, []);
 
-  const handleBpmChange = useCallback((bpm: number) => {
-    dualDeckEngine.setTargetBpm(bpm);
+  const handleTriggerNext = useCallback(() => {
+    dualDeckEngine.triggerNext();
   }, []);
 
   if (!library) {
@@ -127,7 +125,7 @@ function App() {
         onSettingsChange={handleSettingsChange}
         onStop={handleStop}
         onTogglePause={handleTogglePause}
-        onBpmChange={handleBpmChange}
+        onTriggerNext={handleTriggerNext}
       />
       <main className="flex-1 overflow-auto">
         <TrackGrid

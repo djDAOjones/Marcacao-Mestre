@@ -1,4 +1,4 @@
-# Beat‑Matched Grid Player — Technical Specification v3
+# Beat‑Matched Grid Player — Technical Specification v4
 
 ## 1. Purpose
 
@@ -155,12 +155,11 @@ The app computes:
 #### Controls
 | Control | Type | Notes |
 |---------|------|-------|
-| **Quantise** | Toggle ON/OFF | Default: **OFF** (preserves native tempo/quality) |
-| **Mix Length** | Segmented: 0 \| 1 \| 2 \| 4 \| 8 bars | Default: **2** (0 = hard cut) |
+| **Transition Mode** | Toggle: MIX / CUT | **MIX** = 2-bar quantised crossfade; **CUT** = bar-aligned instant switch |
 | **Duck** | Toggle ON/OFF | Drops to -12 dB over 1000ms with EQ dip |
-| **Pause** | Toggle | Halts playback; resume continues from position |
+| **Next** | Button | Initiates transition to queued track immediately |
+| **Pause** | Toggle | Global pause with 0.5s fade-down; resume rewinds 1s then fades up 0.5s |
 | **Stop** | Button (red) | Panic — instant silence, clears queue |
-| **BPM** | Stepper + click-to-type | Visible when Quantise ON; tap number to edit directly |
 
 ### 5.3 Track Grid
 
@@ -192,57 +191,44 @@ The app computes:
 
 ## 6. Transition Behaviour
 
-### 6.1 Quantise ON (Locked BPM)
+### 6.1 MIX Mode (Default)
 
-**User mental model:** "Everything locks to one tempo"
+**User mental model:** "Smooth, musical handoff"
 
 | Phase | Behaviour |
 |-------|-----------|
 | **Cue** | Incoming track queued, waits for next downbeat |
-| **Start** | Incoming starts on downbeat at Target BPM |
-| **Crossfade** | Volume ramp only — both tracks at same BPM |
-| **End** | Outgoing stops, incoming continues at Target BPM |
+| **Start** | Incoming starts on downbeat at current track's BPM (quantised) |
+| **Crossfade** | 2-bar equal-power crossfade with tempo slide to incoming native BPM |
+| **End** | Outgoing stops, incoming continues at its native tempo |
 
-- BPM control is visible and adjustable
-- Both tracks remain phase-locked throughout
+- Transition is beat-aligned and musical
+- Both tracks slide tempo together during crossfade
 
-### 6.2 Quantise OFF (Tempo Slide)
+### 6.2 CUT Mode
 
-**User mental model:** "Smooth handoff to the new track's feel"
+**User mental model:** "Hard cut on the beat"
 
 | Phase | Behaviour |
 |-------|-----------|
-| **Cue** | Incoming track queued |
-| **Start** | Incoming starts at **current track's BPM** (time-stretched) on next bar |
-| **Crossfade** | **Both tracks slide tempo** from current BPM → incoming native BPM |
-| **End** | Outgoing stops, incoming continues at its native tempo map |
+| **Cue** | Incoming track queued, prepared at outgoing track's tempo |
+| **Trigger** | User presses NEXT or track button (triple-click) |
+| **Wait** | Engine waits for next bar downbeat |
+| **Switch** | 50ms micro-fade at bar onset; incoming starts on its downbeat aligned to outgoing |
 
-**Detailed tempo slide:**
-```
-Time:        0%              50%              100%
-             │                │                │
-Current BPM: 120 ─────────── 115 ─────────── 110 (stops)
-Incoming:    120 ─────────── 115 ─────────── 110 (native)
-             ▲                                ▲
-          Both match                    Both match
-          current BPM                   incoming native BPM
-```
+- Bar-aligned — cuts on next bar downbeat for musical timing
+- Beats aligned — incoming track's downbeat syncs with outgoing's bar onset
+- 50ms fade prevents harsh audio artifacts
+- Incoming track plays at outgoing track's tempo (beat-matched)
 
-Both tracks remain beat-aligned throughout the slide.
-
-### 6.3 Crossfade Timing
-
-Mix length is measured in **bars of the current track** at transition start.
-
-| Mix Length | Typical Duration (at 120 BPM, 4/4) |
-|------------|-----------------------------------|
-| 0 bars | Instant (hard cut on boundary) |
-| 1 bar | ~2 seconds |
-| 2 bars | ~4 seconds |
-| 4 bars | ~8 seconds |
-| 8 bars | ~16 seconds |
+### 6.3 Crossfade Curve
 
 Volume curve: **Equal-power crossfade** (maintains perceived loudness)
+
+| Mode | Duration |
+|------|----------|
+| MIX | 2 bars (~4 seconds at 120 BPM) |
+| CUT | 50ms micro-fade at bar onset |
 
 ---
 
@@ -315,8 +301,7 @@ interface LibraryRecord {
 
 interface SettingsRecord {
   currentLibraryId: string;
-  quantiseOn: boolean;
-  mixLengthBars: 0 | 1 | 2 | 4 | 8;
+  transitionMode: 'mix' | 'cut';  // MIX = 2-bar quantised crossfade, CUT = bar-aligned instant switch
   duckLevel: number;
 }
 ```

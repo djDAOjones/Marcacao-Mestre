@@ -84,9 +84,10 @@ export class Deck {
     this.state = 'paused';
   }
 
-  resume(): void {
+  resume(fromPosition?: number): void {
     if (this.state !== 'paused' || !this.audioBuffer) return;
-    this.play(this.pausedAt);
+    const position = fromPosition ?? this.pausedAt;
+    this.play(position);
   }
 
   setVolume(volume: number, rampTime: number = 0): void {

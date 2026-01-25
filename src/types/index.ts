@@ -52,12 +52,16 @@ export interface TransportState {
   mixLengthBars: number;
 }
 
-export type MixLengthBars = 0 | 1 | 2 | 4 | 8;
+/**
+ * Transition modes (v4 simplified):
+ * - 'mix': 2-bar quantised crossfade with tempo slide
+ * - 'cut': Immediate switch with 50ms micro-fade (non-quantised)
+ */
+export type TransitionMode = 'mix' | 'cut';
 
 /** Settings snapshot captured when a track is queued */
 export interface QueueItemSettings {
-  mixLengthBars: MixLengthBars;
-  quantiseOn: boolean;
+  transitionMode: TransitionMode;
   targetBpm: number;
 }
 
@@ -70,8 +74,7 @@ export interface QueueItem {
 }
 
 export interface AppSettings {
-  quantiseOn: boolean;
-  mixLengthBars: MixLengthBars;
+  transitionMode: TransitionMode;
   duckOn: boolean;
   duckLevel: number;
 }
