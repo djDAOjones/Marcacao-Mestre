@@ -52,9 +52,26 @@ export interface TransportState {
   mixLengthBars: number;
 }
 
+export type MixLengthBars = 0 | 1 | 2 | 4 | 8;
+
+/** Settings snapshot captured when a track is queued */
+export interface QueueItemSettings {
+  mixLengthBars: MixLengthBars;
+  quantiseOn: boolean;
+  targetBpm: number;
+}
+
+/** A track in the queue with its transition settings */
+export interface QueueItem {
+  id: string;           // Unique queue item ID (not track ID)
+  track: Track;
+  settings: QueueItemSettings;
+  queuedAt: number;     // Timestamp for ordering
+}
+
 export interface AppSettings {
   quantiseOn: boolean;
-  mixLengthBars: 4 | 8 | 16;
+  mixLengthBars: MixLengthBars;
   duckOn: boolean;
   duckLevel: number;
 }

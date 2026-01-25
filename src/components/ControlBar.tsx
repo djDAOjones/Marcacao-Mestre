@@ -1,24 +1,43 @@
-import { Square, Volume2, VolumeX } from 'lucide-react';
+import { Square, Volume2, VolumeX, Minus, Plus } from 'lucide-react';
 import type { AppSettings } from '../types';
+import type { TransportState } from '../lib/dualDeckEngine';
 
-interface ControlBarProps {
-  currentTrackName: string | null;
-  currentBpm: number;
-  isPlaying: boolean;
+export interface ControlBarProps {
+  transportState: TransportState;
   settings: AppSettings;
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   onStop: () => void;
+  onBpmChange: (bpm: number) => void;
 }
 
 export function ControlBar({
-  currentTrackName,
-  currentBpm,
-  isPlaying,
+  transportState,
   settings,
   onSettingsChange,
   onStop,
+  onBpmChange,
 }: ControlBarProps) {
-  const mixLengths: Array<4 | 8 | 16> = [4, 8, 16];
+  const mixLengths: Array<0 | 1 | 2 | 4 | 8> = [0, 1, 2, 4, 8];
+  
+  const getStatusText = () => {
+    switch (transportState.phase) {
+      case 'idle': return 'STOPPED';
+      case 'playing': return 'PLAYING';
+      case 'queued': return 'QUEUED';
+      case 'mixing': 
+        const barsLeft = Math.ceil((1 - transportState.mixProgress) * transportState.mixLengthBars);
+        return `MIXING (${barsLeft}/${transportState.mixLengthBars} bars)`;
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (transportState.phase) {
+      case 'idle': return 'text-gray-400';
+      case 'playing': return 'text-green-400';
+      case 'queued': return 'text-amber-400';
+      case 'mixing': return 'text-blue-400';
+    }
+  };
 
   return (
     <div className="bg-gray-900 border-b border-gray-700">
@@ -27,17 +46,44 @@ export function ControlBar({
         <div className="flex items-center gap-6">
           <div>
             <span className="text-gray-500 mr-2">NOW:</span>
-            <span className="font-medium">{currentTrackName ?? '—'}</span>
+            <span className="font-medium">{transportState.currentTrack?.name ?? '—'}</span>
+          </div>
+          <div>
+            <span className="text-gray-500 mr-2">NEXT:</span>
+            <span className="font-medium text-amber-400">{transportState.nextTrack?.name ?? '—'}</span>
           </div>
           <div>
             <span className="text-gray-500 mr-2">STATUS:</span>
-            <span className={isPlaying ? 'text-green-400' : 'text-gray-400'}>
-              {isPlaying ? 'PLAYING' : 'STOPPED'}
+            <span className={getStatusColor()}>
+              {getStatusText()}
             </span>
           </div>
         </div>
-        <div className="text-xl font-mono font-bold text-amber-400">
-          {Math.round(currentBpm)} BPM
+        <div className="flex items-center gap-2">
+          {settings.quantiseOn && (
+            <>
+              <button
+                onClick={() => onBpmChange(transportState.targetBpm - 1)}
+                className="p-1 rounded bg-gray-700 hover:bg-gray-600"
+              >
+                <Minus size={16} />
+              </button>
+              <div className="text-xl font-mono font-bold text-amber-400 min-w-[100px] text-center">
+                {Math.round(transportState.targetBpm)} BPM
+              </div>
+              <button
+                onClick={() => onBpmChange(transportState.targetBpm + 1)}
+                className="p-1 rounded bg-gray-700 hover:bg-gray-600"
+              >
+                <Plus size={16} />
+              </button>
+            </>
+          )}
+          {!settings.quantiseOn && (
+            <div className="text-xl font-mono font-bold text-amber-400">
+              {Math.round(transportState.currentBpm)} BPM
+            </div>
+          )}
         </div>
       </div>
 

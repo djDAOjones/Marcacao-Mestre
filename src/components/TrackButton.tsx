@@ -1,12 +1,21 @@
 import type { Track, TrackState } from '../types';
+import { useMultiClick } from '../hooks/useMultiClick';
 
 interface TrackButtonProps {
   track: Track;
   state: TrackState;
-  onClick: () => void;
+  onSingleClick: () => void;
+  onDoubleClick: () => void;
+  onTripleClick: () => void;
 }
 
-export function TrackButton({ track, state, onClick }: TrackButtonProps) {
+export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTripleClick }: TrackButtonProps) {
+  const handleClick = useMultiClick({
+    delay: 300,
+    onSingleClick,
+    onDoubleClick,
+    onTripleClick,
+  });
   const stateStyles: Record<TrackState, string> = {
     idle: 'bg-gray-700 hover:bg-gray-600 border-gray-600',
     queued: 'bg-amber-600 hover:bg-amber-500 border-amber-400 animate-pulse',
@@ -18,7 +27,7 @@ export function TrackButton({ track, state, onClick }: TrackButtonProps) {
 
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={state === 'disabled'}
       className={`
         w-full aspect-square min-h-[100px]
