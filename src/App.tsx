@@ -7,6 +7,8 @@ import type { Library, Track, AppSettings } from './types';
 
 const DEFAULT_SETTINGS: AppSettings = {
   transitionMode: 'mix',
+  fixTempo: false,
+  targetBpm: 120,
   duckOn: false,
   duckLevel: 0.18,
 };
@@ -48,8 +50,17 @@ function App() {
     dualDeckEngine.setConfig({
       transitionMode: settings.transitionMode,
       duckLevel: settings.duckLevel,
+      fixTempo: settings.fixTempo,
     });
-  }, [settings.transitionMode, settings.duckLevel]);
+  }, [settings.transitionMode, settings.duckLevel, settings.fixTempo]);
+
+  useEffect(() => {
+    dualDeckEngine.setFixTempo(settings.fixTempo);
+  }, [settings.fixTempo]);
+
+  useEffect(() => {
+    dualDeckEngine.setTargetBpm(settings.targetBpm);
+  }, [settings.targetBpm]);
 
   const handleLibraryLoaded = useCallback((lib: Library, loadedTracks: Track[]) => {
     setLibrary(lib);

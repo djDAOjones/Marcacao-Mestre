@@ -174,6 +174,58 @@ Last updated: 2026-01-27 (v0.1.13)
 
 ---
 
+## Fix Tempo Feature
+
+### TC-043: CUT Mode Native Speed
+
+- **Steps:** Set mode to CUT, queue and trigger a track transition
+- **Expected:** Incoming track plays at its native BPM (no time-stretching)
+- **Status:** [ ]
+
+### TC-044: Fix Tempo Toggle ON
+
+- **Steps:** Press FIX button while playing
+- **Expected:** Button turns green, current track time-stretches to target BPM
+- **Status:** [ ]
+
+### TC-045: Fix Tempo Toggle OFF
+
+- **Steps:** Turn Fix Tempo off while playing
+- **Expected:** Current track reverts to native speed, BPM display updates
+- **Status:** [ ]
+
+### TC-046: Fix Tempo with CUT Mode
+
+- **Steps:** Enable Fix Tempo, then trigger CUT transition
+- **Expected:** Incoming track plays at target BPM (tempo-matched)
+- **Status:** [ ]
+
+### TC-047: Interactive BPM Click-to-Edit
+
+- **Steps:** Click on BPM display
+- **Expected:** Text input appears, can type new BPM value (60-200)
+- **Status:** [ ]
+
+### TC-048: Interactive BPM Drag Adjust
+
+- **Steps:** Click and drag up/down on BPM display
+- **Expected:** BPM value changes in real-time, Fix Tempo enables automatically
+- **Status:** [ ]
+
+### TC-049: BPM Edit Submits on Enter
+
+- **Steps:** Click BPM, type new value, press Enter
+- **Expected:** New BPM applied, Fix Tempo enabled, input closes
+- **Status:** [ ]
+
+### TC-050: BPM Edit Cancels on Escape
+
+- **Steps:** Click BPM, type value, press Escape
+- **Expected:** Edit cancelled, original BPM retained
+- **Status:** [ ]
+
+---
+
 ## UI Sizing
 
 ### TC-040: Track Pads Compact Size

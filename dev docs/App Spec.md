@@ -152,16 +152,22 @@ The app computes:
 - **NOW:** Current track name
 - **NEXT:** Queued track (or `—`)
 - **STATUS:** `PLAYING` | `QUEUED` | `MIXING (n/X bars)`
-- **BPM:** Current effective tempo (always shown)
+- **BPM:** Current effective tempo (interactive — click to type, drag to adjust)
 
 #### Controls
 | Control | Type | Notes |
 |---------|------|-------|
-| **Transition Mode** | Toggle: MIX / CUT | **MIX** = 2-bar quantised crossfade; **CUT** = bar-aligned instant switch |
+| **Transition Mode** | Toggle: MIX / CUT | **MIX** = 2-bar quantised crossfade; **CUT** = bar-aligned instant switch (native tempo) |
+| **Fix Tempo** | Toggle ON/OFF | When ON, all tracks play at target BPM; when OFF, tracks play at native speed |
 | **Duck** | Toggle ON/OFF | Drops to -12 dB over 1000ms with EQ dip |
 | **Next** | Button | Initiates transition to queued track immediately |
 | **Pause** | Toggle | Global pause with 0.5s fade-down; resume rewinds 1s then fades up 0.5s |
 | **Stop** | Button (red) | Panic — instant silence, clears queue |
+
+#### BPM Display Interaction
+- **Click:** Opens text input to type exact BPM value
+- **Drag up/down:** Adjusts BPM in real-time (±0.5 per pixel)
+- **Range:** 60–200 BPM
 
 ### 5.3 Track Grid
 
@@ -209,19 +215,20 @@ The app computes:
 
 ### 6.2 CUT Mode
 
-**User mental model:** "Hard cut on the beat"
+**User mental model:** "Hard cut on the beat — native tempo"
 
 | Phase | Behaviour |
 |-------|-----------|
-| **Cue** | Incoming track queued, prepared at outgoing track's tempo |
+| **Cue** | Incoming track queued at native tempo |
 | **Trigger** | User presses NEXT or track button (triple-click) |
 | **Wait** | Engine waits for next bar downbeat |
-| **Switch** | 50ms micro-fade at bar onset; incoming starts on its downbeat aligned to outgoing |
+| **Switch** | 50ms micro-fade at bar onset; incoming starts on its downbeat |
 
 - Bar-aligned — cuts on next bar downbeat for musical timing
 - Beats aligned — incoming track's downbeat syncs with outgoing's bar onset
 - 50ms fade prevents harsh audio artifacts
-- Incoming track plays at outgoing track's tempo (beat-matched)
+- **Native tempo** — incoming track plays at its own BPM (no time-stretching)
+- If **Fix Tempo** is ON, tempo matching applies even in CUT mode
 
 ### 6.3 Crossfade Curve
 

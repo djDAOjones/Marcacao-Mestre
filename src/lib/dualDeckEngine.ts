@@ -20,10 +20,12 @@ export interface TransportState {
 /**
  * Engine configuration (v4 simplified)
  * - transitionMode: 'mix' = 2-bar quantised crossfade, 'cut' = 50ms micro-fade
+ * - fixTempo: when true, all tracks play at target BPM; when false, native speed
  */
 export interface EngineConfig {
   transitionMode: TransitionMode;
   duckLevel: number;
+  fixTempo: boolean;
 }
 
 type DeckId = 'A' | 'B';
@@ -45,6 +47,7 @@ class DualDeckEngine {
   private config: EngineConfig = {
     transitionMode: 'mix',
     duckLevel: 0.18,
+    fixTempo: false, // Default: tracks play at native speed
   };
   
   // Pause state for fade/rewind behaviour
@@ -215,24 +218,30 @@ class DualDeckEngine {
     console.log(`[DualDeck] Phase -> mixing, incoming track: ${this.activeQueueItem.track.name}`);
   }
 
-  /** Execute bar-aligned CUT transition with 50ms micro-fade and beat sync */
+  /** Execute bar-aligned CUT transition with 50ms micro-fade */
   private executeCut(activeDeck: Deck, inactiveDeck: Deck): void {
     if (!this.activeQueueItem || !this.audioContext) return;
     
-    const outgoingBpm = activeDeck.getEffectiveBpm();
     const incomingNativeBpm = inactiveDeck.getNativeBpm();
-    
-    console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name} (synced at ${outgoingBpm.toFixed(1)} BPM)`);
     
     // 50ms micro-fade to avoid click
     const fadeTime = 0.05;
     activeDeck.setVolume(0, fadeTime);
     
-    // Start incoming at outgoing track's tempo (beat-matched)
-    const playbackRate = outgoingBpm / incomingNativeBpm;
-    inactiveDeck.setPlaybackRate(playbackRate);
+    // CUT mode: native tempo by default, unless Fix Tempo is ON
+    if (this.config.fixTempo) {
+      // Fix Tempo ON: match target BPM
+      const playbackRate = this.targetBpm / incomingNativeBpm;
+      inactiveDeck.setPlaybackRate(playbackRate);
+      console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name} (fixed at ${this.targetBpm.toFixed(1)} BPM)`);
+    } else {
+      // Fix Tempo OFF: play at native speed
+      inactiveDeck.setPlaybackRate(1);
+      this.targetBpm = incomingNativeBpm; // Update target to reflect native BPM
+      console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name} (native ${incomingNativeBpm.toFixed(1)} BPM)`);
+    }
+    
     inactiveDeck.setVolume(1);
-    // Start at position 0 (first downbeat of incoming track aligns with bar onset)
     inactiveDeck.play(0);
     inactiveDeck.setState('playing');
     
@@ -242,9 +251,8 @@ class DualDeckEngine {
       activeDeck.setVolume(1);
     }, fadeTime * 1000);
     
-    // Swap active deck - keep current BPM (beat-matched)
+    // Swap active deck
     this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
-    // targetBpm stays at outgoing tempo (tracks are beat-matched)
     this.phase = 'playing';
     this.activeQueueItem = null;
     this.advanceQueue();
@@ -482,6 +490,29 @@ class DualDeckEngine {
 
   getDuckState(): boolean {
     return this.isDucked;
+  }
+
+  getFixTempo(): boolean {
+    return this.config.fixTempo;
+  }
+
+  setFixTempo(enabled: boolean): void {
+    this.config.fixTempo = enabled;
+    console.log(`[DualDeck] Fix Tempo ${enabled ? 'ON' : 'OFF'}`);
+    
+    // If currently playing and fixTempo just turned on, apply tempo to current track
+    const activeDeck = this.getActiveDeck();
+    if (enabled && activeDeck?.isPlaying()) {
+      const nativeBpm = activeDeck.getNativeBpm();
+      const playbackRate = this.targetBpm / nativeBpm;
+      activeDeck.setPlaybackRate(playbackRate);
+      console.log(`[DualDeck] Applied tempo ${this.targetBpm.toFixed(1)} BPM (rate: ${playbackRate.toFixed(3)})`);
+    } else if (!enabled && activeDeck?.isPlaying()) {
+      // Fix Tempo OFF: revert to native speed
+      activeDeck.setPlaybackRate(1);
+      this.targetBpm = activeDeck.getNativeBpm();
+      console.log(`[DualDeck] Reverted to native ${this.targetBpm.toFixed(1)} BPM`);
+    }
   }
 
   async resume(): Promise<void> {

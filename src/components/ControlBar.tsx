@@ -1,4 +1,5 @@
-import { Square, Pause, Play, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Square, Pause, Play, SkipForward, Volume2, VolumeX, Lock, Unlock } from 'lucide-react';
 import type { AppSettings } from '../types';
 import type { TransportState } from '../lib/dualDeckEngine';
 
@@ -19,6 +20,55 @@ export function ControlBar({
   onTogglePause,
   onTriggerNext,
 }: ControlBarProps) {
+  const [isEditingBpm, setIsEditingBpm] = useState(false);
+  const [editBpmValue, setEditBpmValue] = useState('');
+  const dragStartY = useRef<number | null>(null);
+  const dragStartBpm = useRef<number>(120);
+
+  const handleBpmClick = useCallback(() => {
+    setEditBpmValue(Math.round(transportState.currentBpm).toString());
+    setIsEditingBpm(true);
+  }, [transportState.currentBpm]);
+
+  const handleBpmSubmit = useCallback(() => {
+    const newBpm = parseInt(editBpmValue, 10);
+    if (!isNaN(newBpm) && newBpm >= 60 && newBpm <= 200) {
+      onSettingsChange({ targetBpm: newBpm, fixTempo: true });
+    }
+    setIsEditingBpm(false);
+  }, [editBpmValue, onSettingsChange]);
+
+  const handleBpmKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBpmSubmit();
+    } else if (e.key === 'Escape') {
+      setIsEditingBpm(false);
+    }
+  }, [handleBpmSubmit]);
+
+  const handleBpmDragStart = useCallback((e: React.MouseEvent) => {
+    if (isEditingBpm) return;
+    dragStartY.current = e.clientY;
+    dragStartBpm.current = settings.targetBpm || transportState.currentBpm;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (dragStartY.current === null) return;
+      const deltaY = dragStartY.current - moveEvent.clientY;
+      const deltaBpm = Math.round(deltaY * 0.5); // 0.5 BPM per pixel
+      const newBpm = Math.max(60, Math.min(200, dragStartBpm.current + deltaBpm));
+      onSettingsChange({ targetBpm: newBpm, fixTempo: true });
+    };
+
+    const handleMouseUp = () => {
+      dragStartY.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [isEditingBpm, settings.targetBpm, transportState.currentBpm, onSettingsChange]);
+
   const getStatusText = () => {
     switch (transportState.phase) {
       case 'idle': return 'STOPPED';
@@ -61,9 +111,35 @@ export function ControlBar({
             </span>
           </div>
         </div>
-        <div className="text-xl font-mono font-bold text-amber-400">
-          {Math.round(transportState.currentBpm)} BPM
-        </div>
+        {/* Interactive BPM Display */}
+        {isEditingBpm ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="60"
+              max="200"
+              value={editBpmValue}
+              onChange={(e) => setEditBpmValue(e.target.value)}
+              onKeyDown={handleBpmKeyDown}
+              onBlur={handleBpmSubmit}
+              autoFocus
+              className="w-20 px-2 py-1 text-xl font-mono font-bold text-amber-400 
+                         bg-gray-800 border border-amber-400 rounded text-center"
+            />
+            <span className="text-xl font-mono font-bold text-amber-400">BPM</span>
+          </div>
+        ) : (
+          <div
+            onClick={handleBpmClick}
+            onMouseDown={handleBpmDragStart}
+            className={`text-xl font-mono font-bold cursor-ns-resize select-none
+                       ${settings.fixTempo ? 'text-green-400' : 'text-amber-400'}`}
+            title="Click to edit, drag to adjust"
+          >
+            {Math.round(transportState.currentBpm)} BPM
+            {settings.fixTempo && <span className="text-xs ml-1">🔒</span>}
+          </div>
+        )}
       </div>
 
       {/* Controls - Large buttons for tablet tapping */}
@@ -94,6 +170,21 @@ export function ControlBar({
               CUT
             </button>
           </div>
+
+          {/* Fix Tempo Toggle */}
+          <button
+            onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
+            className={`
+              flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+              ${settings.fixTempo 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-700 text-gray-300'}
+            `}
+            title={settings.fixTempo ? 'Tempo locked - tracks time-stretch to match' : 'Native tempo - tracks play at original speed'}
+          >
+            {settings.fixTempo ? <Lock size={24} /> : <Unlock size={24} />}
+            FIX
+          </button>
 
           {/* Duck Toggle */}
           <button

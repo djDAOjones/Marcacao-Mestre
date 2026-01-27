@@ -75,6 +75,8 @@ export interface QueueItem {
 
 export interface AppSettings {
   transitionMode: TransitionMode;
+  fixTempo: boolean;
+  targetBpm: number;
   duckOn: boolean;
   duckLevel: number;
 }
