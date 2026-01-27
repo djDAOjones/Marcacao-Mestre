@@ -14,6 +14,29 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const loadDemoLibrary = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch the preloaded demo library from public folder
+      const response = await fetch(`${import.meta.env.BASE_URL}Archive.zip`);
+      if (!response.ok) {
+        throw new Error('Demo library not available');
+      }
+      const blob = await response.blob();
+      const file = new File([blob], 'Archive.zip', { type: 'application/zip' });
+      
+      const { library, tracks } = await loadZipLibrary(file);
+      await saveLibrary(library, tracks);
+      onLibraryLoaded(library, tracks);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load demo library');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onLibraryLoaded]);
+
   const processFile = useCallback(async (file: File) => {
     if (!file.name.endsWith('.zip')) {
       setError('Please upload a .zip file');
@@ -123,6 +146,21 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
             </>
           )}
         </label>
+
+        {/* Demo Library Button */}
+        <div className="mt-6">
+          <button
+            onClick={loadDemoLibrary}
+            disabled={isLoading}
+            className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 
+                       text-white font-bold rounded-xl transition-colors"
+          >
+            Load Demo Library
+          </button>
+          <p className="text-gray-500 text-sm mt-2">
+            Try the app with preloaded sample tracks
+          </p>
+        </div>
 
         {error && (
           <div className="flex items-center gap-2 mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400">
