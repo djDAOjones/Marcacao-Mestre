@@ -63,16 +63,21 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Larger control buttons (56px+ height for tablet tapping)
 - [x] Duck ramp (1000ms fade)
 - [x] Duck EQ (4kHz -12dB Q=1 during duck)
-- [x] **Fix Tempo toggle:**
-  - [x] Add Fix Tempo button to ControlBar
-  - [x] When OFF: tracks play at native speed (default for CUT mode)
-  - [x] When ON: tracks time-stretch to target BPM
+- [x] **Tempo lock toggle:**
+  - [x] Add TEMPO button to ControlBar (🔒/🔓 icons)
+  - [x] When unlocked: tracks play at native speed (default for CUT mode)
+  - [x] When locked: tracks time-stretch to target BPM
 - [x] **CUT mode native speed:**
   - [x] CUT mode defaults to native tempo (no time-stretching)
   - [x] Fix Tempo overrides this when enabled
 - [x] **Interactive BPM display:**
   - [x] Click BPM to open text input
   - [x] Drag up/down to adjust BPM in real-time
+- [ ] **Queue panel (right side):**
+  - [ ] Vertical list on right edge showing upcoming tracks
+  - [ ] Now Playing highlighted at top with progress
+  - [ ] Tap track to remove from queue
+  - [ ] Track name and BPM badge display
 
 **Deliverable:** Simplified controls matching spec v4.
 

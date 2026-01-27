@@ -171,7 +171,7 @@ export function ControlBar({
             </button>
           </div>
 
-          {/* Fix Tempo Toggle */}
+          {/* Tempo Lock Toggle */}
           <button
             onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
             className={`
@@ -183,7 +183,7 @@ export function ControlBar({
             title={settings.fixTempo ? 'Tempo locked - tracks time-stretch to match' : 'Native tempo - tracks play at original speed'}
           >
             {settings.fixTempo ? <Lock size={24} /> : <Unlock size={24} />}
-            FIX
+            TEMPO
           </button>
 
           {/* Duck Toggle */}

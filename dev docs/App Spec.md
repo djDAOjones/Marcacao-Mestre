@@ -158,16 +158,27 @@ The app computes:
 | Control | Type | Notes |
 |---------|------|-------|
 | **Transition Mode** | Toggle: MIX / CUT | **MIX** = 2-bar quantised crossfade; **CUT** = bar-aligned instant switch (native tempo) |
-| **Fix Tempo** | Toggle ON/OFF | When ON, all tracks play at target BPM; when OFF, tracks play at native speed |
+| **Tempo** | Toggle ON/OFF (🔒/🔓) | When locked, all tracks play at target BPM; when unlocked, tracks play at native speed |
 | **Duck** | Toggle ON/OFF | Drops to -12 dB over 1000ms with EQ dip |
 | **Next** | Button | Initiates transition to queued track immediately |
 | **Pause** | Toggle | Global pause with 0.5s fade-down; resume rewinds 1s then fades up 0.5s |
 | **Stop** | Button (red) | Panic — instant silence, clears queue |
 
 #### BPM Display Interaction
+
 - **Click:** Opens text input to type exact BPM value
 - **Drag up/down:** Adjusts BPM in real-time (±0.5 per pixel)
 - **Range:** 60–200 BPM
+
+#### Queue Panel (Right Side)
+
+- **Position:** Right edge of screen, vertical list
+- **Contents:** Upcoming tracks in queue order (top = next)
+- **Track display:** Track name, BPM badge
+- **Interactions:**
+  - Tap to remove from queue
+  - Drag to reorder (future enhancement)
+- **Now Playing:** Highlighted at top with progress indicator
 
 ### 5.3 Track Grid
 
