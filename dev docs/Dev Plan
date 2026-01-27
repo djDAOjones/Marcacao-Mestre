@@ -61,8 +61,8 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [x] **UI sizing improvements:**
   - [x] Smaller track pads (60×60px compact layout)
   - [x] Larger control buttons (56px+ height for tablet tapping)
-- [ ] Duck ramp (1000ms fade)
-- [ ] Duck EQ (4kHz -12dB Q=1 during duck)
+- [x] Duck ramp (1000ms fade)
+- [x] Duck EQ (4kHz -12dB Q=1 during duck)
 
 **Deliverable:** Simplified controls matching spec v4.
 

@@ -146,6 +146,34 @@ Last updated: 2026-01-27 (v0.1.13)
 
 ---
 
+## Duck Feature
+
+### TC-036: Duck Toggle
+
+- **Steps:** Press DUCK button while playing
+- **Expected:** Button highlights yellow, audio fades to -15dB over 1s
+- **Status:** [ ]
+
+### TC-037: Duck Ramp Time
+
+- **Steps:** Toggle duck on and off while playing
+- **Expected:** Volume change is gradual (~1 second), not instant
+- **Status:** [ ]
+
+### TC-038: Duck EQ Cut
+
+- **Steps:** Toggle duck on while playing vocal/mid-heavy track
+- **Expected:** Mid frequencies (4kHz) sound noticeably reduced
+- **Status:** [ ]
+
+### TC-039: Duck Off Restores Full Audio
+
+- **Steps:** Turn duck off after it was on
+- **Expected:** Volume and EQ return to normal over ~1 second
+- **Status:** [ ]
+
+---
+
 ## UI Sizing
 
 ### TC-040: Track Pads Compact Size

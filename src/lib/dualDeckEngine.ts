@@ -31,6 +31,7 @@ type DeckId = 'A' | 'B';
 class DualDeckEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private duckFilter: BiquadFilterNode | null = null; // EQ filter for duck
   
   private deckA: Deck | null = null;
   private deckB: Deck | null = null;
@@ -50,6 +51,11 @@ class DualDeckEngine {
   private pauseFadeTime = 0.5;    // 500ms fade
   private resumeRewindTime = 1.0; // 1s rewind on resume
   
+  // Duck settings
+  private duckRampTime = 1.0;     // 1000ms fade for duck
+  private duckEqFreq = 4000;      // 4kHz center frequency
+  private duckEqGain = -12;       // -12dB cut when ducked
+  private duckEqQ = 1;            // Q factor
   private isDucked: boolean = false;
   private targetBpm: number = 120;
   
@@ -62,11 +68,22 @@ class DualDeckEngine {
     if (this.audioContext) return;
     
     this.audioContext = new AudioContext();
+    
+    // Create duck EQ filter (peaking filter for mid-frequency cut)
+    this.duckFilter = this.audioContext.createBiquadFilter();
+    this.duckFilter.type = 'peaking';
+    this.duckFilter.frequency.value = this.duckEqFreq;
+    this.duckFilter.Q.value = this.duckEqQ;
+    this.duckFilter.gain.value = 0; // Start with no EQ cut
+    
+    // Create master gain and connect: filter -> gain -> destination
     this.masterGain = this.audioContext.createGain();
+    this.duckFilter.connect(this.masterGain);
     this.masterGain.connect(this.audioContext.destination);
     
-    this.deckA = new Deck(this.audioContext, this.masterGain);
-    this.deckB = new Deck(this.audioContext, this.masterGain);
+    // Decks connect to the duck filter (not directly to master gain)
+    this.deckA = new Deck(this.audioContext, this.duckFilter);
+    this.deckB = new Deck(this.audioContext, this.duckFilter);
     
     // Start scheduler
     this.startScheduler();
@@ -396,16 +413,28 @@ class DualDeckEngine {
   }
 
   setDuck(enabled: boolean): void {
-    if (!this.masterGain || !this.audioContext) return;
+    if (!this.masterGain || !this.duckFilter || !this.audioContext) return;
     
     this.isDucked = enabled;
     const targetGain = enabled ? this.config.duckLevel : 1;
+    const targetEqGain = enabled ? this.duckEqGain : 0;
+    const timeConstant = this.duckRampTime / 3; // setTargetAtTime uses time constant
     
+    // Ramp volume down/up over 1000ms
     this.masterGain.gain.setTargetAtTime(
       targetGain,
       this.audioContext.currentTime,
-      0.05
+      timeConstant
     );
+    
+    // Ramp EQ cut in/out over 1000ms
+    this.duckFilter.gain.setTargetAtTime(
+      targetEqGain,
+      this.audioContext.currentTime,
+      timeConstant
+    );
+    
+    console.log(`[DualDeck] Duck ${enabled ? 'ON' : 'OFF'}: volume=${targetGain}, EQ=${targetEqGain}dB`);
   }
 
   setTargetBpm(bpm: number): void {
