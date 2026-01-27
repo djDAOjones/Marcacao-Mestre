@@ -146,6 +146,8 @@ The app computes:
 
 ### 5.2 Top Control Bar
 
+**Large, prominent controls** — buttons should be easily tappable on tablets (minimum 48px height, ideally 56px+).
+
 #### Transport Status (read-only)
 - **NOW:** Current track name
 - **NEXT:** Queued track (or `—`)
@@ -163,7 +165,7 @@ The app computes:
 
 ### 5.3 Track Grid
 
-- **Large touch targets** (minimum 80×80px, ideally 120×120px)
+- **Compact touch targets** (60×60px default, fitting more tracks on screen)
 - **Visual states:**
 
 | State | Appearance |

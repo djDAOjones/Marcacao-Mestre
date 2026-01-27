@@ -30,17 +30,17 @@ export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTrip
       onClick={handleClick}
       disabled={state === 'disabled'}
       className={`
-        w-full aspect-square min-h-[100px]
+        w-full aspect-square min-h-[60px] max-h-[80px]
         flex items-center justify-center
-        text-center text-lg font-semibold
-        rounded-xl border-2
+        text-center text-sm font-medium
+        rounded-lg border-2
         transition-all duration-150
         active:scale-95
         select-none
         ${stateStyles[state]}
       `}
     >
-      <span className="px-2 break-words leading-tight">
+      <span className="px-1 break-words leading-tight line-clamp-2">
         {track.name}
       </span>
     </button>
