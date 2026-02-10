@@ -75,6 +75,8 @@ class DualDeckEngine {
   private forceImmediateMix: boolean = false;   // True when triple-click triggers instant mix
   private autoAdvanceRequested: boolean = false; // Prevents repeated auto-advance callbacks
   private preparingQueueItem: boolean = false;   // True while async track load is in progress
+  private isPausedByUser: boolean = false;       // Engine-level pause flag (gates scheduler)
+  private lastMixCompletedAt: number = 0;        // Wall-clock time of last mix completion
 
   async init(): Promise<void> {
     if (this.audioContext) return;
@@ -113,6 +115,7 @@ class DualDeckEngine {
 
   private schedulerTick(): void {
     if (!this.audioContext) return;
+    if (this.isPausedByUser) return; // Skip all scheduling while paused
     
     const activeDeck = this.getActiveDeck();
     const inactiveDeck = this.getInactiveDeck();
@@ -185,7 +188,22 @@ class DualDeckEngine {
           const beatsPerBar = beatMap?.timeSignature.numerator ?? 4;
           const barDurationBuffer = beatsPerBar * (60 / nativeBpm); // bar duration in buffer-time
           const twoBars = 2 * barDurationBuffer;
+          
+          // Safety: don't schedule if duration looks invalid
+          if (duration <= 0 || !Number.isFinite(duration) || !Number.isFinite(nativeBpm) || nativeBpm <= 0) {
+            console.warn(`[DualDeck] Skipping mix schedule: invalid duration=${duration} or bpm=${nativeBpm}`);
+            return;
+          }
+          
           const mixStartTrackTime = Math.max(0, duration - twoBars);
+          
+          // Safety: require minimum play time after last mix before scheduling another
+          const timeSinceLastMix = now - this.lastMixCompletedAt;
+          const minimumGap = twoBars * 2; // at least 4 bars between mixes
+          if (this.lastMixCompletedAt > 0 && timeSinceLastMix < minimumGap) {
+            // Too soon after last mix — defer scheduling
+            return;
+          }
           
           if (currentTime >= mixStartTrackTime - 0.05) {
             // Already at/past the mix point — start at next downbeat
@@ -201,7 +219,7 @@ class DualDeckEngine {
             // Schedule mix 2 bars before end
             const bufferDelta = mixStartTrackTime - currentTime;
             this.pendingMixTime = now + bufferDelta / rate;
-            console.log(`[DualDeck] Mix scheduled ${(bufferDelta / rate).toFixed(1)}s from now (2 bars before end)`);
+            console.log(`[DualDeck] Mix scheduled ${(bufferDelta / rate).toFixed(1)}s from now (2 bars before end, duration=${duration.toFixed(1)}s, currentTime=${currentTime.toFixed(1)}s)`);
           }
         }
       }
@@ -296,6 +314,7 @@ class DualDeckEngine {
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false;
     this.activeQueueItem = null;
+    this.lastMixCompletedAt = this.audioContext?.currentTime ?? 0;
     this.advanceQueue();
   }
 
@@ -320,6 +339,7 @@ class DualDeckEngine {
     this.phase = 'playing';
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false; // Allow auto-advance for the new track
+    this.lastMixCompletedAt = this.audioContext?.currentTime ?? 0;
     console.log(`[DualDeck] Mix complete, now playing: ${this.getActiveDeck()?.getTrack()?.name}`);
     this.activeQueueItem = null;
     this.mixDuration = 0;
@@ -532,6 +552,8 @@ class DualDeckEngine {
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false;
     this.preparingQueueItem = false;
+    this.isPausedByUser = false;
+    this.lastMixCompletedAt = 0;
     console.log('[DualDeck] Stopped');
   }
 
@@ -592,7 +614,7 @@ class DualDeckEngine {
       mixProgress,
       transitionMode: this.config.transitionMode,
       beatPosition: activeDeck?.getStatus().beatPosition ?? null,
-      isPaused: activeDeck?.isPaused() ?? false,
+      isPaused: this.isPausedByUser,
     };
   }
 
@@ -641,23 +663,46 @@ class DualDeckEngine {
     }
   }
 
-  /** Global pause with 0.5s fade-down */
+  /** Global pause — stops both decks immediately and gates scheduler */
   pause(): void {
-    const activeDeck = this.getActiveDeck();
-    if (!activeDeck?.isPlaying() || !this.audioContext) return;
+    if (!this.audioContext) return;
     
-    // Fade down over 0.5s then pause
-    activeDeck.setVolume(0, this.pauseFadeTime);
+    const activeDeck = this.getActiveDeck();
+    const inactiveDeck = this.getInactiveDeck();
+    
+    // Nothing to pause
+    if (!activeDeck?.isPlaying() && this.phase !== 'mixing') return;
+    
+    this.isPausedByUser = true;
+    
+    // Fade down and pause active deck
+    activeDeck?.setVolume(0, this.pauseFadeTime);
     setTimeout(() => {
-      activeDeck.pause();
-      activeDeck.setVolume(1); // Reset volume for resume
-      console.log('[DualDeck] Paused with fade');
+      if (activeDeck?.isPlaying()) {
+        activeDeck.pause();
+      }
+      activeDeck?.setVolume(1); // Reset volume for resume
     }, this.pauseFadeTime * 1000);
+    
+    // Also pause inactive deck if it's playing (e.g. during mixing)
+    if (inactiveDeck?.isPlaying()) {
+      inactiveDeck.setVolume(0, this.pauseFadeTime);
+      setTimeout(() => {
+        if (inactiveDeck?.isPlaying()) {
+          inactiveDeck.pause();
+        }
+        inactiveDeck?.setVolume(1);
+      }, this.pauseFadeTime * 1000);
+    }
+    
+    console.log('[DualDeck] Paused (engine-level)');
   }
 
   /** Resume with 1s rewind and 0.5s fade-up */
   resumePlayback(): void {
     const activeDeck = this.getActiveDeck();
+    const inactiveDeck = this.getInactiveDeck();
+    
     if (!activeDeck?.isPaused()) return;
     
     // Rewind 1s (clamped to 0)
@@ -668,14 +713,22 @@ class DualDeckEngine {
     activeDeck.setVolume(0);
     activeDeck.resume(rewindPos);
     activeDeck.setVolume(1, this.pauseFadeTime);
+    
+    // Also resume inactive deck if it was paused (mid-mix pause)
+    if (inactiveDeck?.isPaused()) {
+      inactiveDeck.setVolume(0);
+      inactiveDeck.resume();
+      inactiveDeck.setVolume(1, this.pauseFadeTime);
+    }
+    
+    this.isPausedByUser = false;
     console.log(`[DualDeck] Resumed from ${rewindPos.toFixed(2)}s with fade`);
   }
 
   togglePause(): void {
-    const activeDeck = this.getActiveDeck();
-    if (activeDeck?.isPaused()) {
+    if (this.isPausedByUser) {
       this.resumePlayback();
-    } else if (activeDeck?.isPlaying()) {
+    } else {
       this.pause();
     }
   }
