@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ControlBar } from './components/ControlBar';
 import { TrackGrid } from './components/TrackGrid';
+import { QueuePanel } from './components/QueuePanel';
 import { LibraryUpload } from './components/LibraryUpload';
 import { dualDeckEngine, type TransportState } from './lib/dualDeckEngine';
 import type { Library, Track, AppSettings } from './types';
@@ -29,6 +30,10 @@ function App() {
     isPaused: false,
   });
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+
+  // Ref to tracks so the auto-advance callback always has the latest list
+  const tracksRef = useRef<Track[]>([]);
+  tracksRef.current = tracks;
 
   useEffect(() => {
     let animationId: number;
@@ -61,6 +66,29 @@ function App() {
   useEffect(() => {
     dualDeckEngine.setTargetBpm(settings.targetBpm);
   }, [settings.targetBpm]);
+
+  // Auto-advance: when a track ends with empty queue, play the next library track
+  useEffect(() => {
+    dualDeckEngine.setOnTrackEnded(() => {
+      const allTracks = tracksRef.current;
+      if (allTracks.length === 0) return;
+
+      const currentTrack = dualDeckEngine.getCurrentTrack();
+      const currentIndex = currentTrack
+        ? allTracks.findIndex(t => t.id === currentTrack.id)
+        : -1;
+
+      // Pick the next track in library order, wrapping to the start
+      const nextIndex = (currentIndex + 1) % allTracks.length;
+      const nextTrack = allTracks[nextIndex];
+      if (nextTrack) {
+        console.log(`[App] Auto-advance: playing next track "${nextTrack.name}"`);
+        dualDeckEngine.loadAndPlayTrack(nextTrack);
+      }
+    });
+
+    return () => dualDeckEngine.setOnTrackEnded(null);
+  }, []);
 
   const handleLibraryLoaded = useCallback((lib: Library, loadedTracks: Track[]) => {
     setLibrary(lib);
@@ -121,12 +149,19 @@ function App() {
     dualDeckEngine.triggerNext();
   }, []);
 
+  const handleRemoveFromQueue = useCallback((itemId: string) => {
+    dualDeckEngine.removeFromQueue(itemId);
+  }, []);
+
+  // Derive queued track IDs for highlighting in the grid
+  const queuedTrackIds = transportState.queue.map(q => q.track.id);
+
   if (!library) {
     return <LibraryUpload onLibraryLoaded={handleLibraryLoaded} />;
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <div className="fixed bottom-2 right-2 text-xs text-gray-500 bg-gray-900/80 px-2 py-1 rounded z-50">
         v{import.meta.env.VITE_APP_VERSION}
       </div>
@@ -138,18 +173,27 @@ function App() {
         onTogglePause={handleTogglePause}
         onTriggerNext={handleTriggerNext}
       />
-      <main className="flex-1 overflow-auto">
-        <TrackGrid
-          tracks={tracks}
-          columns={library.gridColumns}
-          currentTrackId={transportState.currentTrack?.id ?? null}
-          queuedTrackId={transportState.nextTrack?.id ?? null}
-          mixProgress={transportState.mixProgress}
-          onSingleClick={handleSingleClick}
-          onDoubleClick={handleDoubleClick}
-          onTripleClick={handleTripleClick}
+      <div className="flex-1 flex overflow-hidden">
+        <main className="flex-1 overflow-auto">
+          <TrackGrid
+            tracks={tracks}
+            columns={library.gridColumns}
+            currentTrackId={transportState.currentTrack?.id ?? null}
+            queuedTrackId={transportState.nextTrack?.id ?? null}
+            queuedTrackIds={queuedTrackIds}
+            mixProgress={transportState.mixProgress}
+            onSingleClick={handleSingleClick}
+            onDoubleClick={handleDoubleClick}
+            onTripleClick={handleTripleClick}
+          />
+        </main>
+        <QueuePanel
+          currentTrack={transportState.currentTrack}
+          nextTrack={transportState.nextTrack}
+          queue={transportState.queue}
+          onRemoveFromQueue={handleRemoveFromQueue}
         />
-      </main>
+      </div>
     </div>
   );
 }

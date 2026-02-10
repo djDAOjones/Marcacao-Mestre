@@ -92,9 +92,9 @@ export function ControlBar({
   const hasQueuedTrack = transportState.nextTrack !== null || transportState.phase === 'queued';
 
   return (
-    <div className="bg-gray-900 border-b border-gray-700">
+    <nav className="bg-gray-900 border-b border-gray-700" role="toolbar" aria-label="Playback controls">
       {/* Transport Status */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 text-sm">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 text-sm" role="status" aria-live="polite">
         <div className="flex items-center gap-6">
           <div>
             <span className="text-gray-500 mr-2">NOW:</span>
@@ -149,8 +149,11 @@ export function ControlBar({
           <div className="flex items-center bg-gray-800 rounded-xl p-1.5">
             <button
               onClick={() => onSettingsChange({ transitionMode: 'mix' })}
+              aria-pressed={settings.transitionMode === 'mix'}
+              aria-label="Mix transition mode"
               className={`
                 px-6 py-3 rounded-lg text-lg font-bold transition-colors min-h-[56px]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
                 ${settings.transitionMode === 'mix' 
                   ? 'bg-blue-600 text-white' 
                   : 'text-gray-400 hover:text-white'}
@@ -160,8 +163,11 @@ export function ControlBar({
             </button>
             <button
               onClick={() => onSettingsChange({ transitionMode: 'cut' })}
+              aria-pressed={settings.transitionMode === 'cut'}
+              aria-label="Cut transition mode"
               className={`
                 px-6 py-3 rounded-lg text-lg font-bold transition-colors min-h-[56px]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
                 ${settings.transitionMode === 'cut' 
                   ? 'bg-orange-600 text-white' 
                   : 'text-gray-400 hover:text-white'}
@@ -174,8 +180,11 @@ export function ControlBar({
           {/* Tempo Lock Toggle */}
           <button
             onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
+            aria-pressed={settings.fixTempo}
+            aria-label={settings.fixTempo ? 'Tempo locked – tracks time-stretch to match' : 'Native tempo – tracks play at original speed'}
             className={`
               flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
               ${settings.fixTempo 
                 ? 'bg-green-600 text-white' 
                 : 'bg-gray-700 text-gray-300'}
@@ -189,8 +198,11 @@ export function ControlBar({
           {/* Duck Toggle */}
           <button
             onClick={() => onSettingsChange({ duckOn: !settings.duckOn })}
+            aria-pressed={settings.duckOn}
+            aria-label={settings.duckOn ? 'Duck on – volume reduced' : 'Duck off – full volume'}
             className={`
               flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
               ${settings.duckOn 
                 ? 'bg-yellow-600 text-white' 
                 : 'bg-gray-700 text-gray-300'}
@@ -207,8 +219,10 @@ export function ControlBar({
           <button
             onClick={onTriggerNext}
             disabled={!hasQueuedTrack || transportState.phase === 'mixing'}
+            aria-label="Skip to next queued track"
             className={`
               flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
               ${!hasQueuedTrack || transportState.phase === 'mixing'
                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-500 text-white'
@@ -223,8 +237,10 @@ export function ControlBar({
           <button
             onClick={onTogglePause}
             disabled={transportState.phase === 'idle'}
+            aria-label={transportState.isPaused ? 'Resume playback' : 'Pause playback'}
             className={`
               flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
               ${transportState.phase === 'idle'
                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                 : transportState.isPaused
@@ -240,14 +256,16 @@ export function ControlBar({
           {/* Stop Button */}
           <button
             onClick={onStop}
+            aria-label="Stop playback"
             className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 
-                       text-white text-lg font-bold rounded-xl transition-colors min-h-[56px]"
+                       text-white text-lg font-bold rounded-xl transition-colors min-h-[56px]
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <Square size={24} fill="currentColor" />
             STOP
           </button>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }

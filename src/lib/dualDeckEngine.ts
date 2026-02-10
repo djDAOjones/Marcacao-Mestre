@@ -30,6 +30,9 @@ export interface EngineConfig {
 
 type DeckId = 'A' | 'B';
 
+/** Callback fired when the current track finishes and no queued track follows */
+export type OnTrackEndedCallback = () => void;
+
 class DualDeckEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -43,6 +46,9 @@ class DualDeckEngine {
   private queue: QueueItem[] = [];
   private activeQueueItem: QueueItem | null = null;
   private queueIdCounter: number = 0;
+  
+  /** Called when a track ends with nothing queued (for auto-advance) */
+  private onTrackEnded: OnTrackEndedCallback | null = null;
   
   private config: EngineConfig = {
     transitionMode: 'mix',
@@ -110,8 +116,12 @@ class DualDeckEngine {
     
     // Check if current track finished
     if (activeDeck?.isFinished()) {
-      if (this.phase === 'playing' && this.queue.length === 0) {
+      if (this.phase === 'playing' && this.queue.length === 0 && !this.activeQueueItem) {
         this.phase = 'idle';
+        // Fire auto-advance callback so the app can queue the next library track
+        if (this.onTrackEnded) {
+          this.onTrackEnded();
+        }
       }
     }
     
@@ -451,6 +461,11 @@ class DualDeckEngine {
 
   setConfig(config: Partial<EngineConfig>): void {
     this.config = { ...this.config, ...config };
+  }
+
+  /** Register a callback for when a track ends with nothing queued (auto-advance) */
+  setOnTrackEnded(callback: OnTrackEndedCallback | null): void {
+    this.onTrackEnded = callback;
   }
 
   getTransportState(): TransportState {
