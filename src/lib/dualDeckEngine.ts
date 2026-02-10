@@ -665,15 +665,19 @@ class DualDeckEngine {
     }
   }
 
-  /** Trigger next queued track transition immediately */
+  /** Trigger next queued track transition immediately (one track only) */
   triggerNext(): void {
     if (this.phase === 'queued' && this.activeQueueItem) {
+      // Track already prepared — start the mix now
       this.pendingMixTime = null;
+      this.forceImmediateMix = false;
       this.startMix();
       console.log('[DualDeck] Next triggered manually');
     } else if (this.queue.length > 0) {
-      // If nothing queued but items in queue, advance and trigger
+      // Nothing prepared yet — prepare next item and mix at next downbeat
+      this.forceImmediateMix = true;
       this.advanceQueue();
+      console.log('[DualDeck] Next: preparing next track, will mix at next downbeat');
     }
   }
 
