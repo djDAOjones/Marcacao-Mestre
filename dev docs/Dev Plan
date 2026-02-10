@@ -78,6 +78,11 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [ ] Now Playing highlighted at top with progress
   - [ ] Tap track to remove from queue
   - [ ] Track name and BPM badge display
+- [ ] **Auto-advance:** When track queue runs out, play next track from library
+- [ ] **Tempo-sorted grid layout:**
+  - [ ] Distribute tracks into rows by tempo (slowest first, fastest last)
+  - [ ] Dynamically allocate into quintiles (lowest 20% of tempo range, then next 20%, etc.)
+  - [ ] Rows scroll horizontally once they exceed page width
 
 **Deliverable:** Simplified controls matching spec v4.
 
@@ -87,6 +92,10 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [ ] Service worker + offline caching
 - [ ] Install prompt / Add to Home Screen
 - [ ] Touch optimisation + large hit targets
+- [ ] **Responsive layout (1024×768 → 2560×1440):**
+  - [ ] Min resolution: 1024 (w) × 768 (h)
+  - [ ] Max resolution: 2560 (w) × 1440 (h)
+  - [ ] Graceful degradation beyond those bounds
 - [ ] Tablet layout testing
 - [ ] Error handling + validation feedback
 

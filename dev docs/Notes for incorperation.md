@@ -1,0 +1,1 @@
+## in cut mode, make it so that it cuts at the next bar onset and the beats of the two tracks aligned on that bar downbeat
