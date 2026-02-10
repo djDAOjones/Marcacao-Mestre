@@ -110,6 +110,10 @@ export class Deck {
     }
   }
 
+  getPlaybackRate(): number {
+    return this.playbackRate;
+  }
+
   getCurrentTime(): number {
     if (!this.shifter || !this.audioBuffer) return 0;
     return this.shifter.percentagePlayed * this.audioBuffer.duration;

@@ -1,4 +1,5 @@
-import { X, Music } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { X, Music, GripVertical } from 'lucide-react';
 import type { Track, QueueItem } from '../types';
 import { getTrackBpm } from '../lib/tempoGrouping';
 
@@ -11,20 +12,55 @@ export interface QueuePanelProps {
   queue: QueueItem[];
   /** Callback when user taps a queue item to remove it */
   onRemoveFromQueue: (itemId: string) => void;
+  /** Callback when user drags a queue item to reorder */
+  onReorder: (fromIndex: number, toIndex: number) => void;
 }
 
 /**
  * Vertical queue panel displayed on the right edge of the screen.
  * Shows Now Playing at top, then Next, then remaining queued tracks.
- * Tap any queued item to remove it. WCAG AAA compliant.
+ * Queued items are draggable to reorder and tappable to remove.
+ * WCAG AAA compliant.
  */
 export function QueuePanel({
   currentTrack,
   nextTrack,
   queue,
   onRemoveFromQueue,
+  onReorder,
 }: QueuePanelProps) {
   const hasContent = currentTrack || nextTrack || queue.length > 0;
+
+  // Drag-and-drop state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+  const handleDragStart = useCallback((index: number, e: React.DragEvent) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  }, []);
+
+  const handleDragOver = useCallback((index: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropIndex(index);
+  }, []);
+
+  const handleDrop = useCallback((targetIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    const sourceIndex = dragIndex ?? parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (!isNaN(sourceIndex) && sourceIndex !== targetIndex) {
+      onReorder(sourceIndex, targetIndex);
+    }
+    setDragIndex(null);
+    setDropIndex(null);
+  }, [dragIndex, onReorder]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragIndex(null);
+    setDropIndex(null);
+  }, []);
 
   return (
     <aside
@@ -67,7 +103,7 @@ export function QueuePanel({
           />
         )}
 
-        {/* Remaining queue */}
+        {/* Remaining queue — draggable to reorder */}
         {queue.map((item, index) => (
           <QueueEntry
             key={item.id}
@@ -75,6 +111,13 @@ export function QueuePanel({
             track={item.track}
             variant="queued"
             onRemove={() => onRemoveFromQueue(item.id)}
+            draggable
+            isDragging={dragIndex === index}
+            isDropTarget={dropIndex === index && dragIndex !== index}
+            onDragStart={(e) => handleDragStart(index, e)}
+            onDragOver={(e) => handleDragOver(index, e)}
+            onDrop={(e) => handleDrop(index, e)}
+            onDragEnd={handleDragEnd}
           />
         ))}
       </div>
@@ -90,6 +133,13 @@ interface QueueEntryProps {
   track: Track;
   variant: EntryVariant;
   onRemove?: () => void;
+  draggable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
 }
 
 const variantStyles: Record<EntryVariant, { bg: string; border: string; labelColor: string }> = {
@@ -110,23 +160,44 @@ const variantStyles: Record<EntryVariant, { bg: string; border: string; labelCol
   },
 };
 
-function QueueEntry({ label, track, variant, onRemove }: QueueEntryProps) {
+function QueueEntry({
+  label, track, variant, onRemove,
+  draggable: isDraggable, isDragging, isDropTarget,
+  onDragStart, onDragOver, onDrop, onDragEnd,
+}: QueueEntryProps) {
   const style = variantStyles[variant];
   const bpm = Math.round(getTrackBpm(track));
 
   return (
     <div
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
       className={`
-        flex items-center gap-2 px-3 py-2
+        flex items-center gap-1 px-2 py-2
         border-l-4 ${style.border} ${style.bg}
         border-b border-gray-800
         group
+        ${isDragging ? 'opacity-40' : ''}
+        ${isDropTarget ? 'ring-1 ring-blue-400 ring-inset' : ''}
+        ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
+        transition-all duration-75
       `}
       role="listitem"
       aria-label={`${label}: ${track.name}, ${bpm} BPM`}
+      aria-grabbed={isDragging}
     >
+      {/* Drag handle (only for draggable items) */}
+      {isDraggable && (
+        <span className="flex-shrink-0 text-gray-600 group-hover:text-gray-400 transition-colors" aria-hidden="true">
+          <GripVertical size={12} />
+        </span>
+      )}
+
       {/* Position label */}
-      <span className={`text-[10px] font-bold uppercase w-8 flex-shrink-0 ${style.labelColor}`}>
+      <span className={`text-[10px] font-bold uppercase w-6 flex-shrink-0 ${style.labelColor}`}>
         {label}
       </span>
 

@@ -73,16 +73,23 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [x] **Interactive BPM display:**
   - [x] Click BPM to open text input
   - [x] Drag up/down to adjust BPM in real-time
-- [ ] **Queue panel (right side):**
-  - [ ] Vertical list on right edge showing upcoming tracks
-  - [ ] Now Playing highlighted at top with progress
-  - [ ] Tap track to remove from queue
-  - [ ] Track name and BPM badge display
-- [ ] **Auto-advance:** When track queue runs out, play next track from library
-- [ ] **Tempo-sorted grid layout:**
-  - [ ] Distribute tracks into rows by tempo (slowest first, fastest last)
-  - [ ] Dynamically allocate into quintiles (lowest 20% of tempo range, then next 20%, etc.)
-  - [ ] Rows scroll horizontally once they exceed page width
+- [x] **Queue panel (right side):**
+  - [x] Vertical list on right edge showing upcoming tracks
+  - [x] Now Playing highlighted at top with progress
+  - [x] Tap track to remove from queue
+  - [x] Track name and BPM badge display
+- [x] **Auto-advance:** When track queue runs out, play next track from library
+- [x] **Tempo-sorted grid layout:**
+  - [x] Distribute tracks into rows by average tempo (slowest first, fastest last)
+  - [x] Dynamically allocate into quintiles (lowest 20% of tempo range, then next 20%, etc.)
+  - [x] Rows scroll horizontally once they exceed page width
+- [ ] **Queue playback behaviour:**
+  - [ ] Songs in queue play out fully; last 2 bars of outgoing overlap with first 2 bars of incoming (2-bar mix)
+  - [ ] Single click: add track to end of queue
+  - [ ] Double click: insert track as next in queue
+  - [ ] Triple click: immediate 2-bar mix; queue resumes as normal after
+  - [ ] Queue resumes after any click action (queue is never cleared)
+  - [ ] Drag-and-drop reordering of queue items
 
 **Deliverable:** Simplified controls matching spec v4.
 

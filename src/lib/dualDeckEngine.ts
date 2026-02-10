@@ -72,6 +72,8 @@ class DualDeckEngine {
   private mixDuration: number = 0;
   private schedulerInterval: number | null = null;
   private pendingMixTime: number | null = null; // Scheduled time to start mix
+  private forceImmediateMix: boolean = false;   // True when triple-click triggers instant mix
+  private autoAdvanceRequested: boolean = false; // Prevents repeated auto-advance callbacks
 
   async init(): Promise<void> {
     if (this.audioContext) return;
@@ -113,21 +115,23 @@ class DualDeckEngine {
     
     const activeDeck = this.getActiveDeck();
     const inactiveDeck = this.getInactiveDeck();
+    const now = this.audioContext.currentTime;
     
-    // Check if current track finished
-    if (activeDeck?.isFinished()) {
-      if (this.phase === 'playing' && this.queue.length === 0 && !this.activeQueueItem) {
+    // --- Auto-advance: request next track when queue empties while playing ---
+    if (this.phase === 'playing' && this.queue.length === 0 && !this.activeQueueItem) {
+      if (!this.autoAdvanceRequested && this.onTrackEnded) {
+        this.autoAdvanceRequested = true;
+        this.onTrackEnded();
+      }
+      // If track finished and still nothing queued, go idle
+      if (activeDeck?.isFinished()) {
         this.phase = 'idle';
-        // Fire auto-advance callback so the app can queue the next library track
-        if (this.onTrackEnded) {
-          this.onTrackEnded();
-        }
       }
     }
     
-    // Handle mixing phase
+    // --- Handle mixing phase (crossfade in progress) ---
     if (this.phase === 'mixing' && this.mixDuration > 0) {
-      const elapsed = this.audioContext.currentTime - this.mixStartTime;
+      const elapsed = now - this.mixStartTime;
       const progress = Math.min(elapsed / this.mixDuration, 1);
       
       // Equal-power crossfade
@@ -137,7 +141,6 @@ class DualDeckEngine {
       activeDeck?.setVolume(outVolume);
       inactiveDeck?.setVolume(inVolume);
       
-      // Handle tempo during mix (MIX mode uses tempo slide)
       // Tempo slide: interpolate from current native to incoming native
       const currentNative = activeDeck?.getNativeBpm() ?? 120;
       const incomingNative = inactiveDeck?.getNativeBpm() ?? 120;
@@ -151,30 +154,54 @@ class DualDeckEngine {
       
       this.targetBpm = slidingBpm;
       
-      // Mix complete
       if (progress >= 1) {
         this.completeMix();
       }
     }
     
-    // Handle queued track waiting for downbeat
+    // --- Handle queued track: schedule mix at the right moment ---
     if (this.phase === 'queued' && activeDeck?.isPlaying()) {
-      const beatMap = activeDeck.getBeatMap();
-      const currentTime = activeDeck.getCurrentTime();
-      const now = this.audioContext.currentTime;
-      
-      // Schedule the mix start time if not already scheduled
       if (this.pendingMixTime === null) {
-        if (beatMap) {
-          const nextDownbeat = getNextDownbeat(beatMap, currentTime, activeDeck.getEffectiveBpm());
-          const timeUntilDownbeat = nextDownbeat.timeSeconds - currentTime;
-          this.pendingMixTime = now + timeUntilDownbeat;
-          console.log(`[DualDeck] Mix scheduled in ${timeUntilDownbeat.toFixed(2)}s at bar ${nextDownbeat.bar}`);
+        const currentTime = activeDeck.getCurrentTime();
+        const rate = activeDeck.getPlaybackRate() || 1;
+        
+        if (this.forceImmediateMix) {
+          // Triple-click: mix at the next downbeat (immediate)
+          const beatMap = activeDeck.getBeatMap();
+          if (beatMap) {
+            const nextDownbeat = getNextDownbeat(beatMap, currentTime, activeDeck.getEffectiveBpm());
+            const bufferDelta = nextDownbeat.timeSeconds - currentTime;
+            this.pendingMixTime = now + bufferDelta / rate;
+            console.log(`[DualDeck] Immediate mix at next downbeat in ${(bufferDelta / rate).toFixed(2)}s`);
+          } else {
+            this.pendingMixTime = now + 0.1;
+          }
         } else {
-          // No beatmap - start mix after a short delay (next bar approximation)
-          const approxBarDuration = (60 / this.targetBpm) * 4;
-          this.pendingMixTime = now + approxBarDuration;
-          console.log(`[DualDeck] No beatmap - mix scheduled in ${approxBarDuration.toFixed(2)}s`);
+          // Normal queue: mix 2 bars before the end of the current track
+          const duration = activeDeck.getDuration();
+          const nativeBpm = activeDeck.getNativeBpm();
+          const beatMap = activeDeck.getBeatMap();
+          const beatsPerBar = beatMap?.timeSignature.numerator ?? 4;
+          const barDurationBuffer = beatsPerBar * (60 / nativeBpm); // bar duration in buffer-time
+          const twoBars = 2 * barDurationBuffer;
+          const mixStartTrackTime = Math.max(0, duration - twoBars);
+          
+          if (currentTime >= mixStartTrackTime - 0.05) {
+            // Already at/past the mix point — start at next downbeat
+            if (beatMap) {
+              const nextDownbeat = getNextDownbeat(beatMap, currentTime, activeDeck.getEffectiveBpm());
+              const bufferDelta = nextDownbeat.timeSeconds - currentTime;
+              this.pendingMixTime = now + bufferDelta / rate;
+            } else {
+              this.pendingMixTime = now + 0.1;
+            }
+            console.log(`[DualDeck] Track near end — mix starting shortly`);
+          } else {
+            // Schedule mix 2 bars before end
+            const bufferDelta = mixStartTrackTime - currentTime;
+            this.pendingMixTime = now + bufferDelta / rate;
+            console.log(`[DualDeck] Mix scheduled ${(bufferDelta / rate).toFixed(1)}s from now (2 bars before end)`);
+          }
         }
       }
       
@@ -182,6 +209,7 @@ class DualDeckEngine {
       if (this.pendingMixTime !== null && now >= this.pendingMixTime - 0.01) {
         console.log('[DualDeck] Starting mix now');
         this.pendingMixTime = null;
+        this.forceImmediateMix = false;
         this.startMix();
       }
     }
@@ -264,6 +292,7 @@ class DualDeckEngine {
     // Swap active deck
     this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
     this.phase = 'playing';
+    this.autoAdvanceRequested = false;
     this.activeQueueItem = null;
     this.advanceQueue();
   }
@@ -287,6 +316,7 @@ class DualDeckEngine {
     this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
     
     this.phase = 'playing';
+    this.autoAdvanceRequested = false; // Allow auto-advance for the new track
     console.log(`[DualDeck] Mix complete, now playing: ${this.getActiveDeck()?.getTrack()?.name}`);
     this.activeQueueItem = null;
     this.mixDuration = 0;
@@ -355,8 +385,10 @@ class DualDeckEngine {
     this.phase = 'playing';
   }
 
-  /** Add a track to the end of the queue */
+  /** Add a track to the end or front of the queue */
   addToQueue(track: Track, position: 'end' | 'next' = 'end'): void {
+    this.autoAdvanceRequested = false; // New content available
+    
     const queueItem: QueueItem = {
       id: `q-${++this.queueIdCounter}`,
       track,
@@ -381,9 +413,28 @@ class DualDeckEngine {
     }
   }
 
-  /** Queue a track for immediate transition */
-  async queueTrack(track: Track): Promise<void> {
-    // Create queue item and prepare immediately
+  /**
+   * Triple-click: immediate 2-bar mix into the given track.
+   * Preserves the existing queue — the interrupted activeQueueItem
+   * is pushed back to the front so the queue resumes after.
+   */
+  async mixTrackImmediately(track: Track): Promise<void> {
+    if (!this.audioContext) await this.init();
+    this.autoAdvanceRequested = false;
+    
+    const activeDeck = this.getActiveDeck();
+    if (!activeDeck?.isPlaying()) {
+      // Nothing playing — just start immediately
+      await this.playTrackImmediately(track);
+      return;
+    }
+    
+    // Preserve current activeQueueItem by pushing it back to front of queue
+    if (this.activeQueueItem) {
+      this.queue.unshift(this.activeQueueItem);
+      this.activeQueueItem = null;
+    }
+    
     const queueItem: QueueItem = {
       id: `q-${++this.queueIdCounter}`,
       track,
@@ -395,6 +446,32 @@ class DualDeckEngine {
     };
     
     await this.prepareQueueItem(queueItem);
+    this.forceImmediateMix = true;
+    console.log(`[DualDeck] Immediate mix queued: ${track.name} (queue preserved, ${this.queue.length} remaining)`);
+  }
+
+  /** Queue a track for immediate transition (used by loadAndPlayTrack) */
+  async queueTrack(track: Track): Promise<void> {
+    this.autoAdvanceRequested = false;
+    
+    // Preserve current activeQueueItem by pushing it back to front of queue
+    if (this.activeQueueItem) {
+      this.queue.unshift(this.activeQueueItem);
+      this.activeQueueItem = null;
+    }
+    
+    const queueItem: QueueItem = {
+      id: `q-${++this.queueIdCounter}`,
+      track,
+      settings: {
+        transitionMode: this.config.transitionMode,
+        targetBpm: this.targetBpm,
+      },
+      queuedAt: Date.now(),
+    };
+    
+    await this.prepareQueueItem(queueItem);
+    this.forceImmediateMix = true;
     console.log(`[DualDeck] Track queued for immediate transition: ${track.name}`);
   }
 
@@ -414,6 +491,17 @@ class DualDeckEngine {
     }
   }
 
+  /** Reorder queue items (drag-and-drop) */
+  reorderQueue(fromIndex: number, toIndex: number): void {
+    if (fromIndex < 0 || fromIndex >= this.queue.length) return;
+    if (toIndex < 0 || toIndex >= this.queue.length) return;
+    if (fromIndex === toIndex) return;
+    
+    const [item] = this.queue.splice(fromIndex, 1);
+    this.queue.splice(toIndex, 0, item);
+    console.log(`[DualDeck] Queue reordered: moved "${item.track.name}" from ${fromIndex} to ${toIndex}`);
+  }
+
   /** Get the current queue */
   getQueue(): QueueItem[] {
     return [...this.queue];
@@ -427,6 +515,8 @@ class DualDeckEngine {
     this.queue = [];
     this.mixDuration = 0;
     this.pendingMixTime = null;
+    this.forceImmediateMix = false;
+    this.autoAdvanceRequested = false;
     console.log('[DualDeck] Stopped');
   }
 

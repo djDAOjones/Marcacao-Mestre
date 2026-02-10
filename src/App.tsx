@@ -67,7 +67,7 @@ function App() {
     dualDeckEngine.setTargetBpm(settings.targetBpm);
   }, [settings.targetBpm]);
 
-  // Auto-advance: when a track ends with empty queue, play the next library track
+  // Auto-advance: when queue empties while playing, add next library track
   useEffect(() => {
     dualDeckEngine.setOnTrackEnded(() => {
       const allTracks = tracksRef.current;
@@ -82,8 +82,8 @@ function App() {
       const nextIndex = (currentIndex + 1) % allTracks.length;
       const nextTrack = allTracks[nextIndex];
       if (nextTrack) {
-        console.log(`[App] Auto-advance: playing next track "${nextTrack.name}"`);
-        dualDeckEngine.loadAndPlayTrack(nextTrack);
+        console.log(`[App] Auto-advance: queuing "${nextTrack.name}"`);
+        dualDeckEngine.addToQueue(nextTrack, 'end');
       }
     });
 
@@ -123,11 +123,11 @@ function App() {
     }
   }, [transportState.phase]);
 
-  // Triple click: mix immediately
+  // Triple click: immediate 2-bar mix, queue resumes after
   const handleTripleClick = useCallback(async (track: Track) => {
     try {
       await dualDeckEngine.resume();
-      await dualDeckEngine.loadAndPlayTrack(track);
+      await dualDeckEngine.mixTrackImmediately(track);
     } catch (err) {
       console.error('Failed to handle track:', err);
     }
@@ -151,6 +151,10 @@ function App() {
 
   const handleRemoveFromQueue = useCallback((itemId: string) => {
     dualDeckEngine.removeFromQueue(itemId);
+  }, []);
+
+  const handleReorderQueue = useCallback((fromIndex: number, toIndex: number) => {
+    dualDeckEngine.reorderQueue(fromIndex, toIndex);
   }, []);
 
   // Derive queued track IDs for highlighting in the grid
@@ -192,6 +196,7 @@ function App() {
           nextTrack={transportState.nextTrack}
           queue={transportState.queue}
           onRemoveFromQueue={handleRemoveFromQueue}
+          onReorder={handleReorderQueue}
         />
       </div>
     </div>
