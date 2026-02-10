@@ -76,7 +76,6 @@ class DualDeckEngine {
   private autoAdvanceRequested: boolean = false; // Prevents repeated auto-advance callbacks
   private preparingQueueItem: boolean = false;   // True while async track load is in progress
   private isPausedByUser: boolean = false;       // Engine-level pause flag (gates scheduler)
-  private lastMixCompletedAt: number = 0;        // Wall-clock time of last mix completion
 
   async init(): Promise<void> {
     if (this.audioContext) return;
@@ -197,14 +196,6 @@ class DualDeckEngine {
           
           const mixStartTrackTime = Math.max(0, duration - twoBars);
           
-          // Safety: require minimum play time after last mix before scheduling another
-          const timeSinceLastMix = now - this.lastMixCompletedAt;
-          const minimumGap = twoBars * 2; // at least 4 bars between mixes
-          if (this.lastMixCompletedAt > 0 && timeSinceLastMix < minimumGap) {
-            // Too soon after last mix — defer scheduling
-            return;
-          }
-          
           if (currentTime >= mixStartTrackTime - 0.05) {
             // Already at/past the mix point — start at next downbeat
             if (beatMap) {
@@ -314,7 +305,6 @@ class DualDeckEngine {
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false;
     this.activeQueueItem = null;
-    this.lastMixCompletedAt = this.audioContext?.currentTime ?? 0;
     this.advanceQueue();
   }
 
@@ -339,7 +329,6 @@ class DualDeckEngine {
     this.phase = 'playing';
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false; // Allow auto-advance for the new track
-    this.lastMixCompletedAt = this.audioContext?.currentTime ?? 0;
     console.log(`[DualDeck] Mix complete, now playing: ${this.getActiveDeck()?.getTrack()?.name}`);
     this.activeQueueItem = null;
     this.mixDuration = 0;
@@ -553,7 +542,6 @@ class DualDeckEngine {
     this.autoAdvanceRequested = false;
     this.preparingQueueItem = false;
     this.isPausedByUser = false;
-    this.lastMixCompletedAt = 0;
     console.log('[DualDeck] Stopped');
   }
 
