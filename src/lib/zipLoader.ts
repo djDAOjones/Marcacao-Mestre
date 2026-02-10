@@ -1,6 +1,17 @@
 import JSZip from 'jszip';
 import { parseMidi } from './midiParser';
-import type { Manifest, Track, Library } from '../types';
+import type { Manifest, Track, Library, BeatMap } from '../types';
+
+/** crypto.randomUUID polyfill for Safari < 15.4 / insecure contexts */
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback: random hex string
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export interface LoadResult {
   library: Library;
@@ -110,7 +121,7 @@ export async function loadZipLibrary(file: File): Promise<LoadResult> {
     const beatmapBuffer = await beatmapFile.async('arraybuffer');
     const beatMap = parseMidi(beatmapBuffer);
     
-    const duration = await getAudioDuration(audioBlob);
+    const duration = await getAudioDuration(audioBlob, beatMap);
     
     tracks.push({
       id: trackInfo.id,
@@ -122,7 +133,7 @@ export async function loadZipLibrary(file: File): Promise<LoadResult> {
   }
   
   const library: Library = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name: manifest.name,
     gridColumns: manifest.grid?.columns ?? 4,
     trackIds: tracks.map(t => t.id),
@@ -132,21 +143,55 @@ export async function loadZipLibrary(file: File): Promise<LoadResult> {
   return { library, tracks };
 }
 
-async function getAudioDuration(blob: Blob): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const audio = new Audio();
-    audio.preload = 'metadata';
-    
-    audio.onloadedmetadata = () => {
-      URL.revokeObjectURL(audio.src);
-      resolve(audio.duration);
-    };
-    
-    audio.onerror = () => {
-      URL.revokeObjectURL(audio.src);
-      reject(new Error('Failed to load audio file'));
-    };
-    
-    audio.src = URL.createObjectURL(blob);
-  });
+/**
+ * Get audio duration with a timeout fallback for iOS Safari,
+ * where loadedmetadata on blob URLs can hang without user gesture.
+ */
+async function getAudioDuration(blob: Blob, beatMap?: BeatMap): Promise<number> {
+  const TIMEOUT_MS = 4000;
+
+  try {
+    const duration = await Promise.race([
+      new Promise<number>((resolve, reject) => {
+        const audio = new Audio();
+        audio.preload = 'metadata';
+
+        const cleanup = () => {
+          audio.onloadedmetadata = null;
+          audio.onerror = null;
+          if (audio.src) URL.revokeObjectURL(audio.src);
+        };
+
+        audio.onloadedmetadata = () => {
+          const d = audio.duration;
+          cleanup();
+          resolve(Number.isFinite(d) ? d : 0);
+        };
+
+        audio.onerror = () => {
+          cleanup();
+          reject(new Error('Audio metadata load failed'));
+        };
+
+        audio.src = URL.createObjectURL(blob);
+      }),
+      new Promise<number>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)
+      ),
+    ]);
+    return duration;
+  } catch {
+    // Fallback: estimate from beat map if available
+    if (beatMap && beatMap.tempoEvents.length > 0) {
+      const lastEvent = beatMap.tempoEvents[beatMap.tempoEvents.length - 1];
+      if (lastEvent.timeSeconds > 0) {
+        console.warn('[zipLoader] getAudioDuration timed out, using beatmap estimate');
+        return lastEvent.timeSeconds + 30; // rough estimate: last tempo marker + buffer
+      }
+    }
+    // Final fallback: estimate from blob size (rough: ~16kB/s for mp3 at 128kbps)
+    const estimated = blob.size / 16000;
+    console.warn(`[zipLoader] getAudioDuration fallback: ${estimated.toFixed(1)}s from blob size`);
+    return estimated;
+  }
 }

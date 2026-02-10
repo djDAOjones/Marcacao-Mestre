@@ -22,15 +22,19 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
       // Fetch the preloaded demo library from public folder
       const response = await fetch(`${import.meta.env.BASE_URL}Archive.zip`);
       if (!response.ok) {
-        throw new Error('Demo library not available');
+        throw new Error(`Demo library not available (HTTP ${response.status})`);
       }
       const blob = await response.blob();
-      const file = new File([blob], 'Archive.zip', { type: 'application/zip' });
+
+      // Use blob directly instead of File constructor (better iOS compat)
+      const zipBlob = new Blob([blob], { type: 'application/zip' });
+      const file = new File([zipBlob], 'Archive.zip', { type: 'application/zip' });
       
       const { library, tracks } = await loadZipLibrary(file);
       await saveLibrary(library, tracks);
       onLibraryLoaded(library, tracks);
     } catch (err) {
+      console.error('[LibraryUpload] Demo library error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load demo library');
     } finally {
       setIsLoading(false);
