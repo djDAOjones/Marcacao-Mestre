@@ -133,10 +133,6 @@ function App() {
     }
   }, []);
 
-  const handleStop = useCallback(() => {
-    dualDeckEngine.stop();
-  }, []);
-
   const handleTogglePause = useCallback(() => {
     dualDeckEngine.togglePause();
   }, []);
@@ -173,7 +169,6 @@ function App() {
         transportState={transportState}
         settings={settings}
         onSettingsChange={handleSettingsChange}
-        onStop={handleStop}
         onTogglePause={handleTogglePause}
         onTriggerNext={handleTriggerNext}
       />

@@ -83,13 +83,28 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Distribute tracks into rows by average tempo (slowest first, fastest last)
   - [x] Dynamically allocate into quintiles (lowest 20% of tempo range, then next 20%, etc.)
   - [x] Rows scroll horizontally once they exceed page width
-- [ ] **Queue playback behaviour:**
-  - [ ] Songs in queue play out fully; last 2 bars of outgoing overlap with first 2 bars of incoming (2-bar mix)
-  - [ ] Single click: add track to end of queue
-  - [ ] Double click: insert track as next in queue
-  - [ ] Triple click: immediate 2-bar mix; queue resumes as normal after
-  - [ ] Queue resumes after any click action (queue is never cleared)
-  - [ ] Drag-and-drop reordering of queue items
+- [x] **Queue playback behaviour:**
+  - [x] Songs in queue play out fully; last 2 bars of outgoing overlap with first 2 bars of incoming (2-bar mix)
+  - [x] Single click: add track to end of queue
+  - [x] Double click: insert track as next in queue
+  - [x] Triple click: immediate 2-bar mix; queue resumes as normal after
+  - [x] Queue resumes after any click action (queue is never cleared)
+  - [x] Drag-and-drop reordering of queue items
+- [x] **BUG #2 — forced-mix leaves queue in rapid-fire mode:**
+  - [x] Root cause: `addToQueue` reset `autoAdvanceRequested`, causing auto-advance to re-fire during async track load
+  - [x] Fix: `preparingQueueItem` flag prevents concurrent loads; removed reset from `addToQueue`; explicit `forceImmediateMix = false` in completeMix/executeCut
+- [x] **BUG #4 — first track triple-stutter on initial click:**
+  - [x] Root cause: same auto-advance race — concurrent `decodeAudioData` calls stutter the audio thread
+  - [x] Fix: `preparingQueueItem` guard + 50ms fade-in on initial play masks SoundTouch startup artifacts
+- [x] **Play/Pause toggle (#1 — merged Stop+Pause):**
+  - [x] Removed Stop button (redundant with Pause; neither clears queue)
+  - [x] Single Play/Pause toggle: shows Play when paused/stopped, Pause when playing
+- [ ] **Rewind button (#6):**
+  - [ ] Rewind current track to the beginning (or restart previous track)
+- [ ] **Advanced dropdown menu (#8):**
+  - [ ] Dropdown labelled "Advanced" (or similar) in the ControlBar
+  - [ ] Move into it: MIX/CUT toggle, Tempo Lock toggle
+  - [ ] Add: Reset play queue + history option
 
 **Deliverable:** Simplified controls matching spec v4.
 
@@ -99,24 +114,38 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [ ] Service worker + offline caching
 - [ ] Install prompt / Add to Home Screen
 - [ ] Touch optimisation + large hit targets
-- [ ] **Responsive layout (1024×768 → 2560×1440):**
-  - [ ] Min resolution: 1024 (w) × 768 (h)
-  - [ ] Max resolution: 2560 (w) × 1440 (h)
-  - [ ] Graceful degradation beyond those bounds
+- [x] **Responsive layout (1024×768 → 2560×1440):**
+  - [x] Min resolution: 1024 (w) × 768 (h)
+  - [x] Max resolution: 2560 (w) × 1440 (h)
+  - [x] Graceful degradation beyond those bounds
 - [ ] Tablet layout testing
 - [ ] Error handling + validation feedback
+- [ ] **Persist queue & play history (#7):**
+  - [ ] Save current queue to IndexedDB; restore on page reload
+  - [ ] Record play history (track + timestamp); persist across reloads
+- [ ] **Design audit (#3):**
+  - [ ] Cross-check against IBM Carbon Design System principles
+  - [ ] Verify WCAG AAA compliance (contrast, ARIA, keyboard nav)
+  - [ ] Evaluate against Nielsen Norman Group 10 Usability Heuristics
+  - [ ] Requires human screenshots for analysis
 
 **Deliverable:** Installable, offline-capable app optimised for tablets.
 
 ---
 
 ### Phase 6: Future (v2+)
-- [ ] Queue panel UI (visible "Up Next" list)
-- [ ] Queue editing (reorder, delete, modify)
-- [ ] BPM click-to-type input (manual override)
+- [x] Queue panel UI (visible "Up Next" list)
+- [x] Queue editing (reorder, delete, modify)
+- [x] BPM click-to-type input (manual override)
 - [ ] Alternative stretch engine (Rubberband WASM for desktop)
+- [ ] **Presentation clicker control (#5):**
+  - [ ] Map clicker buttons (next/prev/blank) to app actions
+  - [ ] Clicker hardware TBD
+- [ ] **Play history UI (#6):**
+  - [ ] View past tracks played in session
+  - [ ] Navigate back to a previously played track
 
 ---
 
 ## Current Status
-**Phase 4 complete — ready for Phase 5 (PWA & Offline)**
+**Phase 4 in progress — fixing bugs #2 and #4, then UI refinements**

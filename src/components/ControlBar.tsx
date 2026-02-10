@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Square, Pause, Play, SkipForward, Volume2, VolumeX, Lock, Unlock } from 'lucide-react';
+import { Pause, Play, SkipForward, Volume2, VolumeX, Lock, Unlock } from 'lucide-react';
 import type { AppSettings } from '../types';
 import type { TransportState } from '../lib/dualDeckEngine';
 
@@ -7,7 +7,6 @@ export interface ControlBarProps {
   transportState: TransportState;
   settings: AppSettings;
   onSettingsChange: (settings: Partial<AppSettings>) => void;
-  onStop: () => void;
   onTogglePause: () => void;
   onTriggerNext: () => void;
 }
@@ -16,7 +15,6 @@ export function ControlBar({
   transportState,
   settings,
   onSettingsChange,
-  onStop,
   onTogglePause,
   onTriggerNext,
 }: ControlBarProps) {
@@ -233,7 +231,7 @@ export function ControlBar({
             NEXT
           </button>
 
-          {/* Pause/Resume Button */}
+          {/* Play/Pause Toggle */}
           <button
             onClick={onTogglePause}
             disabled={transportState.phase === 'idle'}
@@ -251,18 +249,6 @@ export function ControlBar({
           >
             {transportState.isPaused ? <Play size={24} /> : <Pause size={24} />}
             {transportState.isPaused ? 'PLAY' : 'PAUSE'}
-          </button>
-
-          {/* Stop Button */}
-          <button
-            onClick={onStop}
-            aria-label="Stop playback"
-            className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 
-                       text-white text-lg font-bold rounded-xl transition-colors min-h-[56px]
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            <Square size={24} fill="currentColor" />
-            STOP
           </button>
         </div>
       </div>
