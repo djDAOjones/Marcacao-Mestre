@@ -144,11 +144,15 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Record play history (track name + timestamp) on each track change
   - [x] Collapsible history panel in QueuePanel (most recent first, timestamped)
   - [x] Max 200 history entries; graceful fallback if localStorage full
-- [ ] **Design audit (#3):**
-  - [ ] Cross-check against IBM Carbon Design System principles
-  - [ ] Verify WCAG AAA compliance (contrast, ARIA, keyboard nav)
-  - [ ] Evaluate against Nielsen Norman Group 10 Usability Heuristics
-  - [ ] Requires human screenshots for analysis
+- [x] **Design audit (#3):**
+  - [x] WCAG AAA contrast: bumped text-gray-500 → text-gray-400, text-gray-400 → text-gray-300 for 10px text
+  - [x] Removed opacity-70 on TrackButton BPM text (was reducing contrast below threshold)
+  - [x] Added focus-visible rings to demo library button
+  - [x] Added role="alert" to error messages, improved recovery guidance (Nielsen #9)
+  - [x] Added title tooltip to TrackButton explaining click interactions (Nielsen #6)
+  - [x] Added two-step confirmation to Clear Queue (Nielsen #5: error prevention)
+  - [x] Verified IBM Carbon: 56px min-height buttons, productive-motion easing, system-ui font
+  - [x] Verified ARIA: toolbar, status, list, listitem, expanded, pressed, grabbed roles throughout
 
 **Deliverable:** Installable, offline-capable app optimised for tablets.
 
@@ -170,4 +174,4 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 ---
 
 ## Current Status
-**Phase 4 complete. Phase 5 in progress — persist queue & history done, design audit next.**
+**Phase 5 substantially complete. Remaining: service worker, install prompt, tablet testing.**

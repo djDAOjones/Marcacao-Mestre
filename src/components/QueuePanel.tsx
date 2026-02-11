@@ -140,8 +140,8 @@ export function QueuePanel({
       {/* Queue list */}
       <div className="flex-1 overflow-y-auto" role="list" aria-label="Queued tracks">
         {!hasContent && (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 text-xs px-4 text-center">
-            <Music size={24} className="mb-2 opacity-40" />
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs px-4 text-center">
+            <Music size={24} className="mb-2 opacity-50" />
             <span>No tracks queued</span>
             <span className="mt-1 text-[10px]">Click a track to queue it</span>
           </div>
@@ -211,9 +211,9 @@ export function QueuePanel({
                   className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800/50 text-[10px]"
                   role="listitem"
                 >
-                  <span className="text-gray-500 tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
+                  <span className="text-gray-400 tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
                   <span className="text-gray-300 truncate flex-1">{entry.trackName}</span>
-                  <span className="text-gray-500 tabular-nums flex-shrink-0">
+                  <span className="text-gray-400 tabular-nums flex-shrink-0">
                     {new Date(entry.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -321,7 +321,7 @@ function QueueEntry({
         <p className="text-xs font-medium text-gray-100 truncate leading-tight">
           {track.name}
         </p>
-        <p className="text-[10px] font-mono tabular-nums text-gray-400">
+        <p className="text-[10px] font-mono tabular-nums text-gray-300">
           {bpm} BPM
         </p>
       </div>

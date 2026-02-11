@@ -49,6 +49,7 @@ export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTrip
       disabled={state === 'disabled'}
       aria-label={ariaLabel}
       aria-pressed={state === 'playing' || state === 'queued'}
+      title="Click: queue · Double-click: play next · Triple-click: mix now"
       className={`
         w-[120px] h-[64px]
         flex flex-col items-center justify-center gap-0.5
@@ -64,7 +65,7 @@ export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTrip
       <span className="px-1 break-words leading-tight line-clamp-2">
         {track.name}
       </span>
-      <span className="text-[10px] opacity-70 font-mono tabular-nums">
+      <span className="text-[10px] text-gray-300 font-mono tabular-nums">
         {bpm} BPM
       </span>
     </button>

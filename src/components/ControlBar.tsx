@@ -141,15 +141,15 @@ export function ControlBar({
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 text-sm" role="status" aria-live="polite">
         <div className="flex items-center gap-6">
           <div>
-            <span className="text-gray-500 mr-2">NOW:</span>
+            <span className="text-gray-400 mr-2">NOW:</span>
             <span className="font-medium">{transportState.currentTrack?.name ?? '—'}</span>
           </div>
           <div>
-            <span className="text-gray-500 mr-2">NEXT:</span>
+            <span className="text-gray-400 mr-2">NEXT:</span>
             <span className="font-medium text-amber-400">{transportState.nextTrack?.name ?? '—'}</span>
           </div>
           <div>
-            <span className="text-gray-500 mr-2">STATUS:</span>
+            <span className="text-gray-400 mr-2">STATUS:</span>
             <span className={getStatusColor()}>
               {getStatusText()}
             </span>
@@ -266,7 +266,7 @@ export function ControlBar({
                       CUT
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[10px] text-gray-400 mt-1">
                     {settings.transitionMode === 'mix'
                       ? '2-bar crossfade with tempo slide'
                       : 'Instant switch at next bar'}
@@ -289,34 +289,20 @@ export function ControlBar({
                   >
                     {settings.fixTempo ? <Lock size={18} /> : <Unlock size={18} />}
                     <span>TEMPO LOCK</span>
-                    <span className={`ml-auto text-xs ${settings.fixTempo ? 'text-green-400' : 'text-gray-500'}`}>
+                    <span className={`ml-auto text-xs ${settings.fixTempo ? 'text-green-400' : 'text-gray-400'}`}>
                       {settings.fixTempo ? 'ON' : 'OFF'}
                     </span>
                   </button>
-                  <p className="text-[10px] text-gray-500 mt-1 px-1">
+                  <p className="text-[10px] text-gray-400 mt-1 px-1">
                     {settings.fixTempo
                       ? 'Tracks time-stretch to match target BPM'
                       : 'Tracks play at native speed'}
                   </p>
                 </div>
 
-                {/* Clear Queue */}
+                {/* Clear Queue — two-step confirmation (Nielsen #5: error prevention) */}
                 {onClearQueue && (
-                  <div className="px-4 py-3">
-                    <button
-                      onClick={() => { onClearQueue(); setIsSettingsOpen(false); }}
-                      role="menuitem"
-                      className="
-                        flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold
-                        text-red-400 bg-gray-900 border border-gray-700 hover:border-red-500 hover:bg-red-900/20
-                        transition-colors
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
-                      "
-                    >
-                      <Trash2 size={18} />
-                      <span>CLEAR QUEUE</span>
-                    </button>
-                  </div>
+                  <ClearQueueButton onClearQueue={onClearQueue} onClose={() => setIsSettingsOpen(false)} />
                 )}
               </div>
             )}
@@ -382,5 +368,50 @@ export function ControlBar({
         </div>
       </div>
     </nav>
+  );
+}
+
+/**
+ * Two-step Clear Queue button — first click shows "Confirm?",
+ * second click actually clears. Resets after 2s (Nielsen #5: error prevention).
+ */
+function ClearQueueButton({ onClearQueue, onClose }: { onClearQueue: () => void; onClose: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = useCallback(() => {
+    if (confirming) {
+      onClearQueue();
+      onClose();
+      setConfirming(false);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    } else {
+      setConfirming(true);
+      timerRef.current = setTimeout(() => setConfirming(false), 2000);
+    }
+  }, [confirming, onClearQueue, onClose]);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  return (
+    <div className="px-4 py-3">
+      <button
+        onClick={handleClick}
+        role="menuitem"
+        className={`
+          flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold
+          transition-colors
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+          ${confirming
+            ? 'text-white bg-red-700 border border-red-500'
+            : 'text-red-400 bg-gray-900 border border-gray-700 hover:border-red-500 hover:bg-red-900/20'}
+        `}
+      >
+        <Trash2 size={18} />
+        <span>{confirming ? 'TAP TO CONFIRM' : 'CLEAR QUEUE'}</span>
+      </button>
+    </div>
   );
 }

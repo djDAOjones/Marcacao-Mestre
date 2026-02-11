@@ -97,7 +97,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
       <div className="text-center max-w-md">
         <h1 className="text-3xl font-bold mb-2">Marcação Mestre</h1>
-        <p className="text-gray-400 mb-8">
+        <p className="text-gray-300 mb-8">
           Upload a library ZIP file containing your tracks and beat maps.
         </p>
 
@@ -144,7 +144,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
               <span className="text-gray-300 font-medium">
                 Click or drag to upload library.zip
               </span>
-              <span className="text-gray-500 text-sm mt-2">
+              <span className="text-gray-400 text-sm mt-2">
                 Contains MP3s, MIDI beat maps, and manifest.json
               </span>
             </>
@@ -156,20 +156,27 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
           <button
             onClick={loadDemoLibrary}
             disabled={isLoading}
+            aria-label="Load demo library with sample Capoeira tracks"
             className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 
-                       text-white font-bold rounded-xl transition-colors"
+                       text-white font-bold rounded-xl transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             Load Demo Library
           </button>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-gray-400 text-sm mt-2">
             Try the app with preloaded sample tracks
           </p>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400">
-            <AlertCircle size={18} />
-            <span>{error}</span>
+          <div className="mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300" role="alert">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={18} className="flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            <p className="text-red-400 text-xs mt-1 ml-[26px]">
+              Try reloading the page, or upload a different ZIP file.
+            </p>
           </div>
         )}
       </div>
