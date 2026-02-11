@@ -1,9 +1,34 @@
+/**
+ * DualDeckEngine — Core audio playback orchestrator for Marcação Mestre.
+ *
+ * Architecture:
+ *   DualDeckEngine  (this file)  — Orchestrator: audio init, scheduler, transitions, transport
+ *   └─ QueueManager               — Queue CRUD (add/remove/reorder), no audio deps
+ *   └─ Deck (×2)                  — Individual deck playback via SoundTouch
+ *   └─ beatScheduler              — Pure beat/bar math utilities
+ *
+ * The engine manages two Deck instances (A/B) for gapless mixing. A scheduler
+ * running on requestAnimationFrame handles auto-advance, mix timing, and
+ * crossfade progression. Queue data is delegated to QueueManager.
+ *
+ * Transition modes:
+ *   - 'mix'  — 2-bar quantised crossfade with equal-power curve + tempo slide
+ *   - 'cut'  — Immediate switch with 50ms micro-fade (non-quantised)
+ */
+
 import type { Track, QueueItem, TransitionMode } from '../types';
 import { Deck } from './deck';
+import { QueueManager } from './queueManager';
 import { getNextDownbeat, getNativeBpm, type BeatPosition } from './beatScheduler';
 
+// =============================================================================
+// Types
+// =============================================================================
+
+/** Lifecycle phase of the engine */
 export type TransitionPhase = 'idle' | 'queued' | 'mixing' | 'playing';
 
+/** Snapshot of engine state for React UI consumption (read-only) */
 export interface TransportState {
   phase: TransitionPhase;
   currentTrack: Track | null;
@@ -17,11 +42,7 @@ export interface TransportState {
   isPaused: boolean;
 }
 
-/**
- * Engine configuration (v4 simplified)
- * - transitionMode: 'mix' = 2-bar quantised crossfade, 'cut' = 50ms micro-fade
- * - fixTempo: when true, all tracks play at target BPM; when false, native speed
- */
+/** Engine configuration — controls transition behaviour and tempo */
 export interface EngineConfig {
   transitionMode: TransitionMode;
   duckLevel: number;
@@ -30,53 +51,81 @@ export interface EngineConfig {
 
 type DeckId = 'A' | 'B';
 
-/** Callback fired when the current track finishes and no queued track follows */
+/** Callback fired when the current track ends with nothing queued (triggers auto-advance) */
 export type OnTrackEndedCallback = () => void;
 
 class DualDeckEngine {
+  // ===========================================================================
+  // Audio infrastructure
+  // ===========================================================================
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private duckFilter: BiquadFilterNode | null = null; // EQ filter for duck
-  
+  private duckFilter: BiquadFilterNode | null = null;
+
+  // ===========================================================================
+  // Decks
+  // ===========================================================================
   private deckA: Deck | null = null;
   private deckB: Deck | null = null;
   private activeDeck: DeckId = 'A';
-  
+
+  // ===========================================================================
+  // Queue (delegated to QueueManager)
+  // ===========================================================================
+  private queueManager = new QueueManager();
   private phase: TransitionPhase = 'idle';
-  private queue: QueueItem[] = [];
-  private activeQueueItem: QueueItem | null = null;
-  private queueIdCounter: number = 0;
-  
-  /** Called when a track ends with nothing queued (for auto-advance) */
+
+  /** Callback fired when queue empties during playback (triggers auto-advance in App) */
   private onTrackEnded: OnTrackEndedCallback | null = null;
-  
+
+  // ===========================================================================
+  // Configuration
+  // ===========================================================================
   private config: EngineConfig = {
     transitionMode: 'mix',
     duckLevel: 0.18,
-    fixTempo: false, // Default: tracks play at native speed
+    fixTempo: false,
   };
-  
-  // Pause state for fade/rewind behaviour
-  private pauseFadeTime = 0.5;    // 500ms fade
-  private resumeRewindTime = 1.0; // 1s rewind on resume
-  
-  // Duck settings
-  private duckRampTime = 1.0;     // 1000ms fade for duck
-  private duckEqFreq = 4000;      // 4kHz center frequency
-  private duckEqGain = -12;       // -12dB cut when ducked
-  private duckEqQ = 1;            // Q factor
-  private isDucked: boolean = false;
+
   private targetBpm: number = 120;
-  
+
+  // ===========================================================================
+  // Pause / resume constants
+  // ===========================================================================
+  private readonly pauseFadeTime = 0.5;    // 500ms volume fade on pause
+  private readonly resumeRewindTime = 1.0; // 1s rewind on resume
+
+  // ===========================================================================
+  // Duck EQ constants
+  // ===========================================================================
+  private readonly duckRampTime = 1.0;     // 1s ramp for duck transitions
+  private readonly duckEqFreq = 4000;      // 4 kHz center frequency
+  private readonly duckEqGain = -12;       // –12 dB cut when ducked
+  private readonly duckEqQ = 1;            // Q factor
+  private isDucked: boolean = false;
+
+  // ===========================================================================
+  // Scheduler state
+  // ===========================================================================
   private mixStartTime: number = 0;
   private mixDuration: number = 0;
   private schedulerInterval: number | null = null;
-  private pendingMixTime: number | null = null; // Scheduled time to start mix
-  private forceImmediateMix: boolean = false;   // True when triple-click triggers instant mix
-  private autoAdvanceRequested: boolean = false; // Prevents repeated auto-advance callbacks
-  private preparingQueueItem: boolean = false;   // True while async track load is in progress
-  private isPausedByUser: boolean = false;       // Engine-level pause flag (gates scheduler)
+  /** AudioContext.currentTime when the next mix should start (null = not yet computed) */
+  private pendingMixTime: number | null = null;
+  /** When true, the scheduler picks the next downbeat instead of 2-bars-before-end */
+  private forceImmediateMix: boolean = false;
+  /** Prevents repeated auto-advance callbacks within one track lifecycle */
+  private autoAdvanceRequested: boolean = false;
+  /** Guards against concurrent async track loads in prepareQueueItem */
+  private preparingQueueItem: boolean = false;
+  /** Engine-level pause flag — gates the entire scheduler when true */
+  private isPausedByUser: boolean = false;
 
+  // ===========================================================================
+  // Initialisation
+  // ===========================================================================
+
+  /** Initialise AudioContext, create audio graph, and start the scheduler */
   async init(): Promise<void> {
     if (this.audioContext) return;
     
@@ -102,6 +151,10 @@ class DualDeckEngine {
     this.startScheduler();
   }
 
+  // ===========================================================================
+  // Scheduler (runs every animation frame)
+  // ===========================================================================
+
   private startScheduler(): void {
     if (this.schedulerInterval) return;
     
@@ -112,6 +165,13 @@ class DualDeckEngine {
     tick();
   }
 
+  /**
+   * Core scheduler tick — runs on every requestAnimationFrame.
+   * Handles three concerns:
+   *   1. Auto-advance: fires onTrackEnded when queue empties
+   *   2. Mixing: drives the equal-power crossfade + tempo slide
+   *   3. Queue scheduling: computes when to start the next mix
+   */
   private schedulerTick(): void {
     if (!this.audioContext) return;
     if (this.isPausedByUser) return; // Skip all scheduling while paused
@@ -121,7 +181,7 @@ class DualDeckEngine {
     const now = this.audioContext.currentTime;
     
     // --- Auto-advance: request next track when queue empties while playing ---
-    if (this.phase === 'playing' && this.queue.length === 0 && !this.activeQueueItem && !this.preparingQueueItem) {
+    if (this.phase === 'playing' && this.queueManager.length === 0 && !this.queueManager.getActiveItem() && !this.preparingQueueItem) {
       if (!this.autoAdvanceRequested && this.onTrackEnded) {
         this.autoAdvanceRequested = true;
         this.onTrackEnded();
@@ -225,11 +285,16 @@ class DualDeckEngine {
     }
   }
 
+  // ===========================================================================
+  // Transition execution
+  // ===========================================================================
+
+  /** Begin a transition (MIX or CUT) to the prepared queue item */
   private startMix(): void {
     const activeDeck = this.getActiveDeck();
     const inactiveDeck = this.getInactiveDeck();
     
-    if (!activeDeck || !inactiveDeck || !this.activeQueueItem || !this.audioContext) {
+    if (!activeDeck || !inactiveDeck || !this.queueManager.getActiveItem() || !this.audioContext) {
       console.warn('[DualDeck] startMix aborted - missing deck or track');
       return;
     }
@@ -263,12 +328,13 @@ class DualDeckEngine {
     activeDeck.setState('fading-out');
     
     this.phase = 'mixing';
-    console.log(`[DualDeck] Phase -> mixing, incoming track: ${this.activeQueueItem.track.name}`);
+    console.log(`[DualDeck] Phase -> mixing, incoming track: ${this.queueManager.getActiveItem()!.track.name}`);
   }
 
   /** Execute bar-aligned CUT transition with 50ms micro-fade */
   private executeCut(activeDeck: Deck, inactiveDeck: Deck): void {
-    if (!this.activeQueueItem || !this.audioContext) return;
+    const activeItem = this.queueManager.getActiveItem();
+    if (!activeItem || !this.audioContext) return;
     
     const incomingNativeBpm = inactiveDeck.getNativeBpm();
     
@@ -278,15 +344,13 @@ class DualDeckEngine {
     
     // CUT mode: native tempo by default, unless Fix Tempo is ON
     if (this.config.fixTempo) {
-      // Fix Tempo ON: match target BPM
       const playbackRate = this.targetBpm / incomingNativeBpm;
       inactiveDeck.setPlaybackRate(playbackRate);
-      console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name} (fixed at ${this.targetBpm.toFixed(1)} BPM)`);
+      console.log(`[DualDeck] CUT to: ${activeItem.track.name} (fixed at ${this.targetBpm.toFixed(1)} BPM)`);
     } else {
-      // Fix Tempo OFF: play at native speed
       inactiveDeck.setPlaybackRate(1);
-      this.targetBpm = incomingNativeBpm; // Update target to reflect native BPM
-      console.log(`[DualDeck] CUT to: ${this.activeQueueItem.track.name} (native ${incomingNativeBpm.toFixed(1)} BPM)`);
+      this.targetBpm = incomingNativeBpm;
+      console.log(`[DualDeck] CUT to: ${activeItem.track.name} (native ${incomingNativeBpm.toFixed(1)} BPM)`);
     }
     
     inactiveDeck.setVolume(1);
@@ -304,7 +368,7 @@ class DualDeckEngine {
     this.phase = 'playing';
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false;
-    this.activeQueueItem = null;
+    this.queueManager.clearActiveItem();
     this.advanceQueue();
   }
 
@@ -330,15 +394,15 @@ class DualDeckEngine {
     this.forceImmediateMix = false;
     this.autoAdvanceRequested = false; // Allow auto-advance for the new track
     console.log(`[DualDeck] Mix complete, now playing: ${this.getActiveDeck()?.getTrack()?.name}`);
-    this.activeQueueItem = null;
+    this.queueManager.clearActiveItem();
     this.mixDuration = 0;
     this.advanceQueue();
   }
 
-  /** Move next item from queue to activeQueueItem and start transition */
+  /** Shift the next item from the queue and begin loading it into the inactive deck */
   private advanceQueue(): void {
-    if (this.queue.length > 0) {
-      const nextItem = this.queue.shift()!;
+    const nextItem = this.queueManager.shift();
+    if (nextItem) {
       this.prepareQueueItem(nextItem);
     }
   }
@@ -356,7 +420,7 @@ class DualDeckEngine {
     
     try {
       await inactiveDeck.loadTrack(item.track);
-      this.activeQueueItem = item;
+      this.queueManager.setActiveItem(item);
       this.pendingMixTime = null;
       this.phase = 'queued';
       console.log(`[DualDeck] Next track ready: ${item.track.name}`);
@@ -365,6 +429,14 @@ class DualDeckEngine {
     }
   }
 
+  // ===========================================================================
+  // Public playback API
+  // ===========================================================================
+
+  /**
+   * Main entry point: play a track immediately if idle, or queue for transition.
+   * Called by App on single-click.
+   */
   async loadAndPlayTrack(track: Track): Promise<void> {
     console.log(`[DualDeck] loadAndPlayTrack called: ${track.name}`);
     console.log(`[DualDeck] Current phase: ${this.phase}, audioContext: ${!!this.audioContext}`);
@@ -409,29 +481,18 @@ class DualDeckEngine {
     this.phase = 'playing';
   }
 
+  // ===========================================================================
+  // Queue management (delegates to QueueManager)
+  // ===========================================================================
+
   /** Add a track to the end or front of the queue */
   addToQueue(track: Track, position: 'end' | 'next' = 'end'): void {
-    
-    const queueItem: QueueItem = {
-      id: `q-${++this.queueIdCounter}`,
-      track,
-      settings: {
-        transitionMode: this.config.transitionMode,
-        targetBpm: this.targetBpm,
-      },
-      queuedAt: Date.now(),
-    };
-    
-    if (position === 'next') {
-      this.queue.unshift(queueItem);
-    } else {
-      this.queue.push(queueItem);
-    }
-    
+    const config = { transitionMode: this.config.transitionMode, targetBpm: this.targetBpm };
+    this.queueManager.add(track, position, config);
     console.log(`[DualDeck] Track added to queue (${position}): ${track.name}`);
     
-    // If nothing is being prepared, prepare the first item
-    if (!this.activeQueueItem && this.phase === 'playing') {
+    // If nothing is being prepared, start loading the first queued item
+    if (!this.queueManager.getActiveItem() && this.phase === 'playing') {
       this.advanceQueue();
     }
   }
@@ -452,54 +513,39 @@ class DualDeckEngine {
       return;
     }
     
-    // Preserve current activeQueueItem by pushing it back to front of queue
-    if (this.activeQueueItem) {
-      this.queue.unshift(this.activeQueueItem);
-      this.activeQueueItem = null;
-    }
+    // Preserve current active item by pushing it back to front of queue
+    this.preserveActiveItem();
     
-    const queueItem: QueueItem = {
-      id: `q-${++this.queueIdCounter}`,
-      track,
-      settings: {
-        transitionMode: this.config.transitionMode,
-        targetBpm: this.targetBpm,
-      },
-      queuedAt: Date.now(),
-    };
-    
+    const config = { transitionMode: this.config.transitionMode, targetBpm: this.targetBpm };
+    const queueItem = this.queueManager.createItem(track, config);
     await this.prepareQueueItem(queueItem);
     this.forceImmediateMix = true;
-    console.log(`[DualDeck] Immediate mix queued: ${track.name} (queue preserved, ${this.queue.length} remaining)`);
+    console.log(`[DualDeck] Immediate mix queued: ${track.name} (queue preserved, ${this.queueManager.length} remaining)`);
   }
 
   /** Queue a track for immediate transition (used by loadAndPlayTrack) */
   async queueTrack(track: Track): Promise<void> {
     this.autoAdvanceRequested = false;
+    this.preserveActiveItem();
     
-    // Preserve current activeQueueItem by pushing it back to front of queue
-    if (this.activeQueueItem) {
-      this.queue.unshift(this.activeQueueItem);
-      this.activeQueueItem = null;
-    }
-    
-    const queueItem: QueueItem = {
-      id: `q-${++this.queueIdCounter}`,
-      track,
-      settings: {
-        transitionMode: this.config.transitionMode,
-        targetBpm: this.targetBpm,
-      },
-      queuedAt: Date.now(),
-    };
-    
+    const config = { transitionMode: this.config.transitionMode, targetBpm: this.targetBpm };
+    const queueItem = this.queueManager.createItem(track, config);
     await this.prepareQueueItem(queueItem);
     this.forceImmediateMix = true;
     console.log(`[DualDeck] Track queued for immediate transition: ${track.name}`);
   }
 
+  /** Push the current active item back to the front of the queue (preserves queue on interrupt) */
+  private preserveActiveItem(): void {
+    const active = this.queueManager.getActiveItem();
+    if (active) {
+      this.queueManager.unshiftItem(active);
+      this.queueManager.clearActiveItem();
+    }
+  }
+
   cancelQueue(): void {
-    this.activeQueueItem = null;
+    this.queueManager.clearActiveItem();
     if (this.phase === 'queued') {
       this.phase = 'playing';
     }
@@ -507,35 +553,32 @@ class DualDeckEngine {
 
   /** Remove an item from the queue by its ID */
   removeFromQueue(itemId: string): void {
-    const index = this.queue.findIndex(item => item.id === itemId);
-    if (index !== -1) {
-      const removed = this.queue.splice(index, 1)[0];
+    const removed = this.queueManager.remove(itemId);
+    if (removed) {
       console.log(`[DualDeck] Removed from queue: ${removed.track.name}`);
     }
   }
 
   /** Reorder queue items (drag-and-drop) */
   reorderQueue(fromIndex: number, toIndex: number): void {
-    if (fromIndex < 0 || fromIndex >= this.queue.length) return;
-    if (toIndex < 0 || toIndex >= this.queue.length) return;
-    if (fromIndex === toIndex) return;
-    
-    const [item] = this.queue.splice(fromIndex, 1);
-    this.queue.splice(toIndex, 0, item);
-    console.log(`[DualDeck] Queue reordered: moved "${item.track.name}" from ${fromIndex} to ${toIndex}`);
+    this.queueManager.reorder(fromIndex, toIndex);
   }
 
-  /** Get the current queue */
+  /** Get a copy of the current queue */
   getQueue(): QueueItem[] {
-    return [...this.queue];
+    return this.queueManager.getQueue();
   }
 
+  // ===========================================================================
+  // Transport controls
+  // ===========================================================================
+
+  /** Full stop — stops both decks, clears queue and all scheduler state */
   stop(): void {
     this.deckA?.stop();
     this.deckB?.stop();
     this.phase = 'idle';
-    this.activeQueueItem = null;
-    this.queue = [];
+    this.queueManager.clear();
     this.mixDuration = 0;
     this.pendingMixTime = null;
     this.forceImmediateMix = false;
@@ -545,6 +588,11 @@ class DualDeckEngine {
     console.log('[DualDeck] Stopped');
   }
 
+  // ===========================================================================
+  // Duck / EQ
+  // ===========================================================================
+
+  /** Toggle duck mode (volume + EQ cut for voice-over) */
   setDuck(enabled: boolean): void {
     if (!this.masterGain || !this.duckFilter || !this.audioContext) return;
     
@@ -570,6 +618,11 @@ class DualDeckEngine {
     console.log(`[DualDeck] Duck ${enabled ? 'ON' : 'OFF'}: volume=${targetGain}, EQ=${targetEqGain}dB`);
   }
 
+  // ===========================================================================
+  // Configuration
+  // ===========================================================================
+
+  /** Set target BPM (clamped 60–200) */
   setTargetBpm(bpm: number): void {
     this.targetBpm = Math.max(60, Math.min(200, bpm));
   }
@@ -583,6 +636,11 @@ class DualDeckEngine {
     this.onTrackEnded = callback;
   }
 
+  // ===========================================================================
+  // State getters (for React UI)
+  // ===========================================================================
+
+  /** Build a read-only transport state snapshot for React rendering */
   getTransportState(): TransportState {
     const activeDeck = this.getActiveDeck();
     
@@ -595,8 +653,8 @@ class DualDeckEngine {
     return {
       phase: this.phase,
       currentTrack: activeDeck?.getTrack() ?? null,
-      nextTrack: this.activeQueueItem?.track ?? this.queue[0]?.track ?? null,
-      queue: [...this.queue],
+      nextTrack: this.queueManager.getNextTrack(),
+      queue: this.queueManager.getQueue(),
       currentBpm: activeDeck?.getEffectiveBpm() ?? this.targetBpm,
       targetBpm: this.targetBpm,
       mixProgress,
@@ -611,7 +669,7 @@ class DualDeckEngine {
   }
 
   getQueuedTrack(): Track | null {
-    return this.activeQueueItem?.track ?? this.queue[0]?.track ?? null;
+    return this.queueManager.getNextTrack();
   }
 
   isPlaying(): boolean {
@@ -645,6 +703,7 @@ class DualDeckEngine {
     }
   }
 
+  /** Resume a suspended AudioContext (required by browsers after user gesture) */
   async resume(): Promise<void> {
     if (this.audioContext?.state === 'suspended') {
       await this.audioContext.resume();
@@ -723,19 +782,23 @@ class DualDeckEngine {
 
   /** Trigger next queued track transition immediately (one track only) */
   triggerNext(): void {
-    if (this.phase === 'queued' && this.activeQueueItem) {
+    if (this.phase === 'queued' && this.queueManager.getActiveItem()) {
       // Track already prepared — start the mix now
       this.pendingMixTime = null;
       this.forceImmediateMix = false;
       this.startMix();
       console.log('[DualDeck] Next triggered manually');
-    } else if (this.queue.length > 0) {
+    } else if (this.queueManager.length > 0) {
       // Nothing prepared yet — prepare next item and mix at next downbeat
       this.forceImmediateMix = true;
       this.advanceQueue();
       console.log('[DualDeck] Next: preparing next track, will mix at next downbeat');
     }
   }
+
+  // ===========================================================================
+  // Internal helpers
+  // ===========================================================================
 
   private getActiveDeck(): Deck | null {
     return this.activeDeck === 'A' ? this.deckA : this.deckB;

@@ -1,9 +1,24 @@
+/**
+ * Deck — Individual audio playback unit using SoundTouch for tempo shifting.
+ *
+ * Each Deck holds one loaded track at a time. It handles play, pause, stop,
+ * volume ramping, and playback-rate (tempo) changes. Two Deck instances are
+ * managed by DualDeckEngine for gapless A/B mixing.
+ *
+ * Position tracking note:
+ *   SoundTouchJS PitchShifter.percentagePlayed grows unboundedly past 1.0,
+ *   so we track position manually using AudioContext.currentTime math.
+ *   See accumulatedOffset / playStartAudioTime below.
+ */
+
 import { PitchShifter } from 'soundtouchjs';
 import type { Track, BeatMap } from '../types';
 import { getNativeBpm, getBeatPositionAtTime, type BeatPosition } from './beatScheduler';
 
+/** Lifecycle state of a single deck */
 export type DeckState = 'idle' | 'loading' | 'playing' | 'paused' | 'fading-in' | 'fading-out';
 
+/** Read-only snapshot of deck state for UI consumption */
 export interface DeckStatus {
   state: DeckState;
   track: Track | null;
@@ -14,19 +29,31 @@ export interface DeckStatus {
 }
 
 export class Deck {
+  // ---------------------------------------------------------------------------
+  // Audio graph
+  // ---------------------------------------------------------------------------
   private audioContext: AudioContext;
   private gainNode: GainNode;
-  
+
+  // ---------------------------------------------------------------------------
+  // Track data
+  // ---------------------------------------------------------------------------
   private audioBuffer: AudioBuffer | null = null;
   private shifter: PitchShifter | null = null;
   private track: Track | null = null;
-  
+
+  // ---------------------------------------------------------------------------
+  // Playback state
+  // ---------------------------------------------------------------------------
   private state: DeckState = 'idle';
   private playbackRate: number = 1.0;
   private volume: number = 1.0;
-  private pausedAt: number = 0; // Track position when paused
-  private playStartAudioTime: number = 0;  // AudioContext.currentTime when play started
-  private accumulatedOffset: number = 0;   // Track position accumulated before rate changes
+  /** Track position (seconds) when paused — used to resume from the same spot */
+  private pausedAt: number = 0;
+  /** AudioContext.currentTime snapshot when play() was last called */
+  private playStartAudioTime: number = 0;
+  /** Accumulated track-time offset across rate changes (seconds in track-time) */
+  private accumulatedOffset: number = 0;
   
   constructor(audioContext: AudioContext, outputNode: AudioNode) {
     this.audioContext = audioContext;
@@ -34,6 +61,7 @@ export class Deck {
     this.gainNode.connect(outputNode);
   }
 
+  /** Decode audio blob and store the buffer. Sets state to 'idle' when done. */
   async loadTrack(track: Track): Promise<void> {
     this.state = 'loading';
     this.track = track;
@@ -44,6 +72,12 @@ export class Deck {
     this.state = 'idle';
   }
 
+  /**
+   * Start (or restart) playback from the given offset.
+   * Creates a fresh PitchShifter instance and resets position tracking.
+   *
+   * @param startOffset - Track position in seconds to start from (default 0)
+   */
   play(startOffset: number = 0): void {
     if (!this.audioBuffer || !this.track) return;
     
@@ -71,6 +105,7 @@ export class Deck {
     });
   }
 
+  /** Stop playback — disconnects the PitchShifter and resets all position state */
   stop(): void {
     if (this.shifter) {
       this.shifter.disconnect();
@@ -82,6 +117,7 @@ export class Deck {
     this.state = 'idle';
   }
 
+  /** Pause playback — records current position and disconnects the shifter */
   pause(): void {
     if (!this.shifter || !this.audioBuffer) return;
     if (this.state !== 'playing' && this.state !== 'fading-in' && this.state !== 'fading-out') return;
@@ -92,12 +128,18 @@ export class Deck {
     this.state = 'paused';
   }
 
+  /** Resume from paused state, optionally at a different position (e.g. after rewind) */
   resume(fromPosition?: number): void {
     if (this.state !== 'paused' || !this.audioBuffer) return;
     const position = fromPosition ?? this.pausedAt;
     this.play(position);
   }
 
+  /**
+   * Set deck volume with optional exponential ramp.
+   * @param volume   - Target volume 0–1
+   * @param rampTime - Ramp duration in seconds (0 = instant)
+   */
   setVolume(volume: number, rampTime: number = 0): void {
     this.volume = volume;
     if (rampTime > 0) {
@@ -111,6 +153,10 @@ export class Deck {
     }
   }
 
+  /**
+   * Change the playback rate (tempo). Accumulates elapsed time at the old rate
+   * before applying the new rate, so getCurrentTime() stays accurate.
+   */
   setPlaybackRate(rate: number): void {
     // Accumulate elapsed time at old rate before changing
     if (this.isPlaying() && this.playStartAudioTime > 0) {
@@ -128,6 +174,10 @@ export class Deck {
     return this.playbackRate;
   }
 
+  /**
+   * Current playback position in track-seconds.
+   * Uses manual AudioContext-timestamp tracking (not SoundTouch percentagePlayed).
+   */
   getCurrentTime(): number {
     if (!this.audioBuffer) return 0;
     if (!this.isPlaying() && this.state === 'paused') return this.pausedAt;
@@ -137,6 +187,7 @@ export class Deck {
     return Math.min(this.accumulatedOffset + elapsed, this.audioBuffer.duration);
   }
 
+  /** Build a read-only status snapshot for UI rendering */
   getStatus(): DeckStatus {
     const currentTime = this.getCurrentTime();
     let beatPosition: BeatPosition | null = null;
@@ -164,11 +215,13 @@ export class Deck {
     return this.track?.beatMap ?? null;
   }
 
+  /** Native BPM from the track's first tempo event (default 120) */
   getNativeBpm(): number {
     if (!this.track) return 120;
     return getNativeBpm(this.track.beatMap);
   }
 
+  /** Effective BPM accounting for current playback rate */
   getEffectiveBpm(): number {
     return this.getNativeBpm() * this.playbackRate;
   }
@@ -181,16 +234,19 @@ export class Deck {
     return this.state === 'paused';
   }
 
+  /** True when playback has reached (or passed) the end of the track */
   isFinished(): boolean {
     if (!this.audioBuffer) return false;
     if (!this.shifter) return false;
     return this.getCurrentTime() >= this.audioBuffer.duration - 0.05;
   }
 
+  /** Override the deck state (used by DualDeckEngine during crossfade phases) */
   setState(state: DeckState): void {
     this.state = state;
   }
 
+  /** Total duration of the loaded audio buffer in seconds */
   getDuration(): number {
     return this.audioBuffer?.duration ?? 0;
   }

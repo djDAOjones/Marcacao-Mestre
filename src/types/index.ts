@@ -1,15 +1,26 @@
+// =============================================================================
+// Audio & Beat Map
+// =============================================================================
+
+/** A single tempo-change event parsed from a MIDI beat map */
 export interface TempoEvent {
   tick: number;
   bpm: number;
   timeSeconds: number;
 }
 
+/** Beat map extracted from MIDI — drives all scheduling and display */
 export interface BeatMap {
   timeSignature: { numerator: number; denominator: number };
   tempoEvents: TempoEvent[];
   ticksPerBeat: number;
 }
 
+// =============================================================================
+// Track & Library
+// =============================================================================
+
+/** A single audio track with its decoded audio and beat map */
 export interface Track {
   id: string;
   name: string;
@@ -18,6 +29,7 @@ export interface Track {
   duration: number;
 }
 
+/** A collection of tracks loaded from a ZIP archive */
 export interface Library {
   id: string;
   name: string;
@@ -26,6 +38,7 @@ export interface Library {
   uploadedAt: Date;
 }
 
+/** ZIP manifest.json schema — describes tracks and grid layout */
 export interface Manifest {
   name: string;
   grid: {
@@ -39,22 +52,20 @@ export interface Manifest {
   }>;
 }
 
+// =============================================================================
+// UI State
+// =============================================================================
+
+/** Visual state of a track button in the grid */
 export type TrackState = 'idle' | 'queued' | 'playing' | 'mixing-out' | 'mixing-in' | 'disabled';
 
-export type PlaybackStatus = 'stopped' | 'playing' | 'queued' | 'mixing';
-
-export interface TransportState {
-  status: PlaybackStatus;
-  currentTrackId: string | null;
-  nextTrackId: string | null;
-  currentBpm: number;
-  mixProgress: number;
-  mixLengthBars: number;
-}
+// =============================================================================
+// Transition & Queue
+// =============================================================================
 
 /**
- * Transition modes (v4 simplified):
- * - 'mix': 2-bar quantised crossfade with tempo slide
+ * Transition modes:
+ * - 'mix': 2-bar quantised crossfade with equal-power curve + tempo slide
  * - 'cut': Immediate switch with 50ms micro-fade (non-quantised)
  */
 export type TransitionMode = 'mix' | 'cut';
@@ -65,14 +76,21 @@ export interface QueueItemSettings {
   targetBpm: number;
 }
 
-/** A track in the queue with its transition settings */
+/** A track in the playback queue with its transition settings */
 export interface QueueItem {
-  id: string;           // Unique queue item ID (not track ID)
+  /** Unique queue-item ID (not the same as Track.id) */
+  id: string;
   track: Track;
   settings: QueueItemSettings;
-  queuedAt: number;     // Timestamp for ordering
+  /** Date.now() timestamp when this item was queued */
+  queuedAt: number;
 }
 
+// =============================================================================
+// App Settings
+// =============================================================================
+
+/** Persistent app-level settings (controls in ControlBar) */
 export interface AppSettings {
   transitionMode: TransitionMode;
   fixTempo: boolean;

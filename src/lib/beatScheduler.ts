@@ -1,17 +1,34 @@
+/**
+ * beatScheduler — Pure utility functions for beat/bar math.
+ *
+ * All functions are stateless and derive timing from a BeatMap. Used by
+ * DualDeckEngine for mix scheduling and by Deck for beat-position display.
+ */
+
 import type { BeatMap } from '../types';
 
+/** Current position within the beat grid (bar, beat, fraction) */
 export interface BeatPosition {
   bar: number;
   beat: number;
+  /** Sub-beat fraction 0–1 (0 = on-beat, 0.5 = mid-beat) */
   fraction: number;
   timeSeconds: number;
 }
 
+/** Information about the next downbeat (bar line) */
 export interface DownbeatInfo {
   timeSeconds: number;
   bar: number;
 }
 
+/**
+ * Calculate the beat position (bar, beat, fraction) at a given time.
+ *
+ * @param beatMap       - Track's beat map
+ * @param timeSeconds   - Current playback position in seconds
+ * @param effectiveBpm  - Override BPM (e.g. after tempo adjustment); falls back to map lookup
+ */
 export function getBeatPositionAtTime(
   beatMap: BeatMap,
   timeSeconds: number,
@@ -30,6 +47,10 @@ export function getBeatPositionAtTime(
   return { bar, beat, fraction, timeSeconds };
 }
 
+/**
+ * Find the next bar-line (downbeat) after the given time.
+ * Used by the scheduler to quantise mix start points.
+ */
 export function getNextDownbeat(
   beatMap: BeatMap,
   currentTimeSeconds: number,
@@ -50,6 +71,7 @@ export function getNextDownbeat(
   };
 }
 
+/** Convenience: seconds remaining until the next downbeat */
 export function getTimeUntilNextDownbeat(
   beatMap: BeatMap,
   currentTimeSeconds: number,
@@ -59,12 +81,14 @@ export function getTimeUntilNextDownbeat(
   return nextDownbeat.timeSeconds - currentTimeSeconds;
 }
 
+/** Duration of one bar in seconds at the given BPM */
 export function getBarDurationAtBpm(beatMap: BeatMap, bpm: number): number {
   const beatsPerBar = beatMap.timeSignature.numerator;
   const secondsPerBeat = 60 / bpm;
   return beatsPerBar * secondsPerBeat;
 }
 
+/** Look up the BPM at a given time by scanning tempo events (internal) */
 function getBpmAtTimeFromMap(beatMap: BeatMap, timeSeconds: number): number {
   let bpm = beatMap.tempoEvents[0]?.bpm ?? 120;
   
@@ -79,6 +103,7 @@ function getBpmAtTimeFromMap(beatMap: BeatMap, timeSeconds: number): number {
   return bpm;
 }
 
+/** Get the track's native BPM (first tempo event, default 120) */
 export function getNativeBpm(beatMap: BeatMap): number {
   return beatMap.tempoEvents[0]?.bpm ?? 120;
 }
