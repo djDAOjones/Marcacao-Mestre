@@ -145,6 +145,14 @@ function App() {
     dualDeckEngine.triggerNext();
   }, []);
 
+  const handleRewind = useCallback(() => {
+    dualDeckEngine.rewind();
+  }, []);
+
+  const handleClearQueue = useCallback(() => {
+    dualDeckEngine.clearQueue();
+  }, []);
+
   const handleRemoveFromQueue = useCallback((itemId: string) => {
     dualDeckEngine.removeFromQueue(itemId);
   }, []);
@@ -171,6 +179,8 @@ function App() {
         onSettingsChange={handleSettingsChange}
         onTogglePause={handleTogglePause}
         onTriggerNext={handleTriggerNext}
+        onRewind={handleRewind}
+        onClearQueue={handleClearQueue}
       />
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 overflow-auto">

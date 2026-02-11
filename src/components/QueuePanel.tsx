@@ -1,7 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { X, Music, GripVertical } from 'lucide-react';
 import type { Track, QueueItem } from '../types';
 import { getTrackBpm } from '../lib/tempoGrouping';
+
+/** Animation duration in ms — matches Carbon productive-motion token */
+const ANIM_DURATION = 200;
 
 export interface QueuePanelProps {
   /** Currently playing track (shown at top with "Now Playing" label) */
@@ -20,7 +23,11 @@ export interface QueuePanelProps {
  * Vertical queue panel displayed on the right edge of the screen.
  * Shows Now Playing at top, then Next, then remaining queued tracks.
  * Queued items are draggable to reorder and tappable to remove.
- * WCAG AAA compliant.
+ *
+ * Animations:
+ *   - Enter: slide-in from right (200ms, Carbon productive-motion easing)
+ *   - Exit:  fade-out + height collapse (200ms) on manual remove
+ *   - Respects prefers-reduced-motion (WCAG AAA)
  */
 export function QueuePanel({
   currentTrack,
@@ -31,9 +38,59 @@ export function QueuePanel({
 }: QueuePanelProps) {
   const hasContent = currentTrack || nextTrack || queue.length > 0;
 
-  // Drag-and-drop state
+  // --- Drag-and-drop state ---
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+  // --- Exit animation state ---
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
+  const exitTimers = useRef<Map<string, number>>(new Map());
+
+  // --- Track previous queue IDs for detecting auto-removed items ---
+  const prevQueueIds = useRef<Set<string>>(new Set());
+
+  // Detect items that disappeared from the queue (auto-removed by engine, e.g. track completed)
+  useEffect(() => {
+    const currentIds = new Set(queue.map(q => q.id));
+    // Items that were in the previous queue but not in current (and not already exiting)
+    prevQueueIds.current.forEach(id => {
+      if (!currentIds.has(id) && !exitingIds.has(id)) {
+        // Item was auto-removed — nothing to animate since it's already gone from the array
+        // The visual shift is handled by CSS transition on remaining items
+      }
+    });
+    prevQueueIds.current = currentIds;
+  }, [queue, exitingIds]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      exitTimers.current.forEach(timer => clearTimeout(timer));
+    };
+  }, []);
+
+  /**
+   * Animated remove: adds item to exiting set, waits for animation,
+   * then calls the actual remove callback.
+   */
+  const handleAnimatedRemove = useCallback((itemId: string) => {
+    // Skip if already exiting
+    if (exitingIds.has(itemId)) return;
+
+    setExitingIds(prev => new Set(prev).add(itemId));
+
+    const timer = window.setTimeout(() => {
+      setExitingIds(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+      exitTimers.current.delete(itemId);
+      onRemoveFromQueue(itemId);
+    }, ANIM_DURATION);
+
+    exitTimers.current.set(itemId, timer);
+  }, [exitingIds, onRemoveFromQueue]);
 
   const handleDragStart = useCallback((index: number, e: React.DragEvent) => {
     setDragIndex(index);
@@ -103,17 +160,18 @@ export function QueuePanel({
           />
         )}
 
-        {/* Remaining queue — draggable to reorder */}
+        {/* Remaining queue — draggable to reorder, animated enter/exit */}
         {queue.map((item, index) => (
           <QueueEntry
             key={item.id}
             label={`${index + 1}`}
             track={item.track}
             variant="queued"
-            onRemove={() => onRemoveFromQueue(item.id)}
+            onRemove={() => handleAnimatedRemove(item.id)}
             draggable
             isDragging={dragIndex === index}
             isDropTarget={dropIndex === index && dragIndex !== index}
+            isExiting={exitingIds.has(item.id)}
             onDragStart={(e) => handleDragStart(index, e)}
             onDragOver={(e) => handleDragOver(index, e)}
             onDrop={(e) => handleDrop(index, e)}
@@ -136,6 +194,8 @@ interface QueueEntryProps {
   draggable?: boolean;
   isDragging?: boolean;
   isDropTarget?: boolean;
+  /** True while exit animation is playing (fade-out + collapse) */
+  isExiting?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
@@ -162,15 +222,25 @@ const variantStyles: Record<EntryVariant, { bg: string; border: string; labelCol
 
 function QueueEntry({
   label, track, variant, onRemove,
-  draggable: isDraggable, isDragging, isDropTarget,
+  draggable: isDraggable, isDragging, isDropTarget, isExiting,
   onDragStart, onDragOver, onDrop, onDragEnd,
 }: QueueEntryProps) {
   const style = variantStyles[variant];
   const bpm = Math.round(getTrackBpm(track));
 
+  // Determine animation class:
+  //   - Exiting items get the collapse/fade-out animation
+  //   - Newly rendered queued items get the slide-in enter animation
+  //   - motion-reduce: no animations (WCAG AAA)
+  const animClass = isExiting
+    ? 'animate-queue-exit motion-reduce:animate-none pointer-events-none'
+    : variant === 'queued'
+      ? 'animate-queue-enter motion-reduce:animate-none'
+      : '';
+
   return (
     <div
-      draggable={isDraggable}
+      draggable={isDraggable && !isExiting}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -179,11 +249,13 @@ function QueueEntry({
         flex items-center gap-1 px-2 py-2
         border-l-4 ${style.border} ${style.bg}
         border-b border-gray-800
+        overflow-hidden
         group
         ${isDragging ? 'opacity-40' : ''}
         ${isDropTarget ? 'ring-1 ring-blue-400 ring-inset' : ''}
         ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
-        transition-all duration-75
+        ${animClass}
+        transition-all duration-150 motion-reduce:transition-none
       `}
       role="listitem"
       aria-label={`${label}: ${track.name}, ${bpm} BPM`}
@@ -211,8 +283,8 @@ function QueueEntry({
         </p>
       </div>
 
-      {/* Remove button (only for queued items) */}
-      {onRemove && (
+      {/* Remove button (only for queued items, hidden during exit) */}
+      {onRemove && !isExiting && (
         <button
           onClick={onRemove}
           className="

@@ -99,12 +99,30 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [x] **Play/Pause toggle (#1 — merged Stop+Pause):**
   - [x] Removed Stop button (redundant with Pause; neither clears queue)
   - [x] Single Play/Pause toggle: shows Play when paused/stopped, Pause when playing
-- [ ] **Rewind button (#6):**
-  - [ ] Rewind current track to the beginning (or restart previous track)
-- [ ] **Advanced dropdown menu (#8):**
-  - [ ] Dropdown labelled "Advanced" (or similar) in the ControlBar
-  - [ ] Move into it: MIX/CUT toggle, Tempo Lock toggle
-  - [ ] Add: Reset play queue + history option
+- [x] **Pause/Resume polish (Notes #1):**
+  - [x] Pause: 0.5s fade-down, gates scheduler via isPausedByUser
+  - [x] Resume: rewind 1s (clamped to 0), 0.5s fade-up
+  - [x] Pauses both decks during mid-mix pause
+- [x] **Modularity refactor:**
+  - [x] Extracted QueueManager (pure data class, no audio deps)
+  - [x] DualDeckEngine reorganised as orchestrator with clear section headers
+  - [x] Deleted dead audioEngine.ts, removed stale types
+  - [x] Comprehensive JSDoc comments across all engine files
+  - [x] Manual AudioContext-timestamp position tracking (SoundTouchJS percentagePlayed fix)
+- [x] **Smooth queue animation (Notes #2):**
+  - [x] Fade-out opacity + height collapse on removed queue items (200ms)
+  - [x] Slide-in from right for new queue items (200ms)
+  - [x] Respects prefers-reduced-motion via motion-reduce: variant (WCAG AAA)
+  - [x] Carbon productive-motion easing: cubic-bezier(0.2, 0, 0.38, 0.9)
+- [x] **Rewind button (#6):**
+  - [x] Restarts current track from beginning with 50ms fade-in
+  - [x] Cancels in-progress mix if active; re-prepares queue item
+  - [x] Queue preserved — playback continues normally after restart
+- [x] **Advanced dropdown menu (#8):**
+  - [x] Settings dropdown in ControlBar (gear icon + label)
+  - [x] Contains: MIX/CUT toggle, Tempo Lock toggle, Clear Queue action
+  - [x] Click-outside and Escape to close; proper ARIA roles
+  - [x] Main bar decluttered: only Duck + transport controls visible
 
 **Deliverable:** Simplified controls matching spec v4.
 
@@ -148,4 +166,4 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 ---
 
 ## Current Status
-**Phase 4 in progress — fixing bugs #2 and #4, then UI refinements**
+**Phase 4 in progress — bugs fixed, modularity done, implementing UI refinements (queue animation, rewind, advanced menu)**

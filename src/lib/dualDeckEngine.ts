@@ -569,6 +569,18 @@ class DualDeckEngine {
     return this.queueManager.getQueue();
   }
 
+  /** Clear the queue and any pending preparation, without stopping current playback */
+  clearQueue(): void {
+    this.queueManager.clear();
+    this.preparingQueueItem = false;
+    this.pendingMixTime = null;
+    this.forceImmediateMix = false;
+    if (this.phase === 'queued') {
+      this.phase = 'playing';
+    }
+    console.log('[DualDeck] Queue cleared');
+  }
+
   // ===========================================================================
   // Transport controls
   // ===========================================================================
@@ -778,6 +790,48 @@ class DualDeckEngine {
     } else {
       this.pause();
     }
+  }
+
+  /**
+   * Rewind — restart the current track from the beginning.
+   * If a mix is in progress, cancels it and restores the active deck.
+   * Queue is preserved so playback continues normally after the restarted track.
+   */
+  rewind(): void {
+    const activeDeck = this.getActiveDeck();
+    if (!activeDeck?.getTrack()) return;
+
+    // If mixing, cancel the mix: stop the incoming deck, restore active
+    if (this.phase === 'mixing') {
+      const inactiveDeck = this.getInactiveDeck();
+      inactiveDeck?.stop();
+      inactiveDeck?.setVolume(1);
+      activeDeck.setVolume(1);
+      activeDeck.setState('playing');
+      this.mixDuration = 0;
+    }
+
+    // Restart from beginning with fade-in to mask SoundTouch artifacts
+    activeDeck.setVolume(0);
+    activeDeck.play(0);
+    activeDeck.setVolume(1, 0.05);
+
+    // Reset scheduler state but preserve queue
+    this.phase = 'playing';
+    this.pendingMixTime = null;
+    this.forceImmediateMix = false;
+    this.autoAdvanceRequested = false;
+    this.isPausedByUser = false;
+
+    // If there was an active queue item, re-prepare it (the inactive deck was potentially disrupted)
+    const activeItem = this.queueManager.getActiveItem();
+    if (activeItem) {
+      this.queueManager.clearActiveItem();
+      this.preparingQueueItem = false;
+      this.prepareQueueItem(activeItem);
+    }
+
+    console.log(`[DualDeck] Rewind: restarted ${activeDeck.getTrack()?.name}`);
   }
 
   /** Trigger next queued track transition immediately (one track only) */

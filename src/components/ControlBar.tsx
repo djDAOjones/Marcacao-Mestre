@@ -1,5 +1,9 @@
-import { useState, useRef, useCallback } from 'react';
-import { Pause, Play, SkipForward, Volume2, VolumeX, Lock, Unlock } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  Pause, Play, SkipBack, SkipForward,
+  Volume2, VolumeX, Lock, Unlock,
+  Settings, Trash2,
+} from 'lucide-react';
 import type { AppSettings } from '../types';
 import type { TransportState } from '../lib/dualDeckEngine';
 
@@ -9,19 +13,61 @@ export interface ControlBarProps {
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   onTogglePause: () => void;
   onTriggerNext: () => void;
+  onRewind: () => void;
+  onClearQueue?: () => void;
 }
 
+/**
+ * ControlBar — Main playback control strip.
+ *
+ * Layout (left → right):
+ *   Status bar:  NOW | NEXT | STATUS | BPM
+ *   Controls:    [Duck] [Settings ▾]  ...spacer...  [⏮] [⏭ NEXT] [⏯ PLAY/PAUSE]
+ *
+ * The Settings dropdown contains less-used controls:
+ *   - MIX / CUT transition toggle
+ *   - Tempo Lock toggle
+ *   - Clear Queue action
+ *
+ * Design: IBM Carbon button sizes (56px min-height), WCAG AAA focus rings,
+ *         Nielsen #8 (minimalist), #6 (recognition > recall).
+ */
 export function ControlBar({
   transportState,
   settings,
   onSettingsChange,
   onTogglePause,
   onTriggerNext,
+  onRewind,
+  onClearQueue,
 }: ControlBarProps) {
   const [isEditingBpm, setIsEditingBpm] = useState(false);
   const [editBpmValue, setEditBpmValue] = useState('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
   const dragStartBpm = useRef<number>(120);
+
+  // Close settings dropdown on click outside or Escape
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSettingsOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isSettingsOpen]);
 
   const handleBpmClick = useCallback(() => {
     setEditBpmValue(Math.round(transportState.currentBpm).toString());
@@ -52,7 +98,7 @@ export function ControlBar({
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (dragStartY.current === null) return;
       const deltaY = dragStartY.current - moveEvent.clientY;
-      const deltaBpm = Math.round(deltaY * 0.5); // 0.5 BPM per pixel
+      const deltaBpm = Math.round(deltaY * 0.5);
       const newBpm = Math.max(60, Math.min(200, dragStartBpm.current + deltaBpm));
       onSettingsChange({ targetBpm: newBpm, fixTempo: true });
     };
@@ -143,57 +189,7 @@ export function ControlBar({
       {/* Controls - Large buttons for tablet tapping */}
       <div className="flex items-center justify-between px-4 py-4">
         <div className="flex items-center gap-4">
-          {/* Transition Mode Toggle: MIX / CUT */}
-          <div className="flex items-center bg-gray-800 rounded-xl p-1.5">
-            <button
-              onClick={() => onSettingsChange({ transitionMode: 'mix' })}
-              aria-pressed={settings.transitionMode === 'mix'}
-              aria-label="Mix transition mode"
-              className={`
-                px-6 py-3 rounded-lg text-lg font-bold transition-colors min-h-[56px]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
-                ${settings.transitionMode === 'mix' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-400 hover:text-white'}
-              `}
-            >
-              MIX
-            </button>
-            <button
-              onClick={() => onSettingsChange({ transitionMode: 'cut' })}
-              aria-pressed={settings.transitionMode === 'cut'}
-              aria-label="Cut transition mode"
-              className={`
-                px-6 py-3 rounded-lg text-lg font-bold transition-colors min-h-[56px]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
-                ${settings.transitionMode === 'cut' 
-                  ? 'bg-orange-600 text-white' 
-                  : 'text-gray-400 hover:text-white'}
-              `}
-            >
-              CUT
-            </button>
-          </div>
-
-          {/* Tempo Lock Toggle */}
-          <button
-            onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
-            aria-pressed={settings.fixTempo}
-            aria-label={settings.fixTempo ? 'Tempo locked – tracks time-stretch to match' : 'Native tempo – tracks play at original speed'}
-            className={`
-              flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
-              ${settings.fixTempo 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-700 text-gray-300'}
-            `}
-            title={settings.fixTempo ? 'Tempo locked - tracks time-stretch to match' : 'Native tempo - tracks play at original speed'}
-          >
-            {settings.fixTempo ? <Lock size={24} /> : <Unlock size={24} />}
-            TEMPO
-          </button>
-
-          {/* Duck Toggle */}
+          {/* Duck Toggle — always visible (frequent use during class) */}
           <button
             onClick={() => onSettingsChange({ duckOn: !settings.duckOn })}
             aria-pressed={settings.duckOn}
@@ -209,10 +205,143 @@ export function ControlBar({
             {settings.duckOn ? <VolumeX size={24} /> : <Volume2 size={24} />}
             DUCK
           </button>
+
+          {/* Settings Dropdown — contains MIX/CUT, Tempo Lock, Clear Queue */}
+          <div className="relative" ref={settingsRef}>
+            <button
+              onClick={() => setIsSettingsOpen(prev => !prev)}
+              aria-expanded={isSettingsOpen}
+              aria-haspopup="menu"
+              aria-label="Settings menu"
+              className={`
+                flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                ${isSettingsOpen
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}
+              `}
+            >
+              <Settings size={24} />
+              <span className="hidden sm:inline">SETTINGS</span>
+            </button>
+
+            {isSettingsOpen && (
+              <div
+                className="absolute top-full left-0 mt-2 w-72 bg-gray-800 border border-gray-600 rounded-xl shadow-xl z-50 overflow-hidden"
+                role="menu"
+                aria-label="Settings"
+              >
+                {/* MIX / CUT Toggle */}
+                <div className="px-4 py-3 border-b border-gray-700">
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
+                    Transition Mode
+                  </label>
+                  <div className="flex items-center bg-gray-900 rounded-lg p-1">
+                    <button
+                      onClick={() => onSettingsChange({ transitionMode: 'mix' })}
+                      aria-pressed={settings.transitionMode === 'mix'}
+                      role="menuitemradio"
+                      className={`
+                        flex-1 px-4 py-2 rounded-md text-sm font-bold transition-colors
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                        ${settings.transitionMode === 'mix' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'text-gray-400 hover:text-white'}
+                      `}
+                    >
+                      MIX
+                    </button>
+                    <button
+                      onClick={() => onSettingsChange({ transitionMode: 'cut' })}
+                      aria-pressed={settings.transitionMode === 'cut'}
+                      role="menuitemradio"
+                      className={`
+                        flex-1 px-4 py-2 rounded-md text-sm font-bold transition-colors
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                        ${settings.transitionMode === 'cut' 
+                          ? 'bg-orange-600 text-white' 
+                          : 'text-gray-400 hover:text-white'}
+                      `}
+                    >
+                      CUT
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {settings.transitionMode === 'mix'
+                      ? '2-bar crossfade with tempo slide'
+                      : 'Instant switch at next bar'}
+                  </p>
+                </div>
+
+                {/* Tempo Lock Toggle */}
+                <div className="px-4 py-3 border-b border-gray-700">
+                  <button
+                    onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
+                    aria-pressed={settings.fixTempo}
+                    role="menuitemcheckbox"
+                    className={`
+                      flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold transition-colors
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                      ${settings.fixTempo 
+                        ? 'bg-green-600/20 text-green-400 border border-green-600' 
+                        : 'bg-gray-900 text-gray-300 border border-gray-700 hover:border-gray-500'}
+                    `}
+                  >
+                    {settings.fixTempo ? <Lock size={18} /> : <Unlock size={18} />}
+                    <span>TEMPO LOCK</span>
+                    <span className={`ml-auto text-xs ${settings.fixTempo ? 'text-green-400' : 'text-gray-500'}`}>
+                      {settings.fixTempo ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                  <p className="text-[10px] text-gray-500 mt-1 px-1">
+                    {settings.fixTempo
+                      ? 'Tracks time-stretch to match target BPM'
+                      : 'Tracks play at native speed'}
+                  </p>
+                </div>
+
+                {/* Clear Queue */}
+                {onClearQueue && (
+                  <div className="px-4 py-3">
+                    <button
+                      onClick={() => { onClearQueue(); setIsSettingsOpen(false); }}
+                      role="menuitem"
+                      className="
+                        flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold
+                        text-red-400 bg-gray-900 border border-gray-700 hover:border-red-500 hover:bg-red-900/20
+                        transition-colors
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                      "
+                    >
+                      <Trash2 size={18} />
+                      <span>CLEAR QUEUE</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Transport Buttons */}
         <div className="flex items-center gap-3">
+          {/* REWIND Button - restart current track */}
+          <button
+            onClick={onRewind}
+            disabled={transportState.phase === 'idle'}
+            aria-label="Rewind to start of current track"
+            className={`
+              flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+              ${transportState.phase === 'idle'
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-700 hover:bg-gray-600 text-white'
+              }
+            `}
+          >
+            <SkipBack size={24} />
+          </button>
+
           {/* NEXT Button - trigger queued track */}
           <button
             onClick={onTriggerNext}
