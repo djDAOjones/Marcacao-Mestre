@@ -222,7 +222,7 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <div className="fixed bottom-2 right-2 text-xs text-gray-500 bg-gray-900/80 px-2 py-1 rounded z-50">
+      <div className="fixed bottom-2 right-2 text-xs text-cap-500 bg-cap-800/80 px-2 py-1 rounded z-50">
         v{import.meta.env.VITE_APP_VERSION}
       </div>
       <ControlBar

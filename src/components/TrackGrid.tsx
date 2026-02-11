@@ -39,14 +39,14 @@ export function TrackGrid({
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3" role="region" aria-label="Track library">
+    <div className="flex flex-col gap-2 p-3" role="region" aria-label="Track library" style={{ background: '#111111' }}>
       {tempoRows.map((row) => (
         <section
           key={row.label}
           aria-label={`Tempo group: ${row.label}`}
         >
           {/* Row header with BPM range label */}
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-1 select-none">
+          <h2 className="text-xs font-semibold text-cap-sand uppercase tracking-wider px-1 mb-1 select-none">
             {row.label}
           </h2>
           {/* Horizontally scrollable row of track buttons */}

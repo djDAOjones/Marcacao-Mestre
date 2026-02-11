@@ -15,12 +15,12 @@ interface TrackButtonProps {
  * Colours chosen from IBM Carbon palette for high-contrast dark theme.
  */
 const stateStyles: Record<TrackState, string> = {
-  idle:        'bg-gray-700 hover:bg-gray-600 border-gray-500 text-gray-50',
-  queued:      'bg-amber-700 hover:bg-amber-600 border-amber-400 text-white animate-pulse',
-  playing:     'bg-green-700 hover:bg-green-600 border-green-400 text-white',
-  'mixing-out':'bg-green-700/60 border-green-400/60 text-white/80',
-  'mixing-in': 'bg-green-600 border-green-300 text-white animate-pulse',
-  disabled:    'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed',
+  idle:        'bg-cap-700 hover:bg-cap-600 border-cap-500 text-cap-white',
+  queued:      'bg-cap-gold hover:bg-cap-gold/80 border-cap-yellow text-cap-black animate-pulse',
+  playing:     'bg-cap-green-deep hover:bg-cap-green border-cap-green text-cap-white',
+  'mixing-out':'bg-cap-green-deep/60 border-cap-green/60 text-cap-white/80',
+  'mixing-in': 'bg-cap-green border-cap-green text-cap-white animate-pulse',
+  disabled:    'bg-cap-900 border-cap-700 text-cap-500 cursor-not-allowed',
 };
 
 const stateAriaLabels: Record<TrackState, string> = {
@@ -58,14 +58,14 @@ export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTrip
         transition-all duration-150
         active:scale-95
         select-none
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white focus-visible:ring-offset-2 focus-visible:ring-offset-cap-black
         ${stateStyles[state]}
       `}
     >
       <span className="px-1 break-words leading-tight line-clamp-2">
         {track.name}
       </span>
-      <span className="text-[10px] text-gray-300 font-mono tabular-nums">
+      <span className="text-[10px] text-cap-cotton font-mono tabular-nums">
         {bpm} BPM
       </span>
     </button>

@@ -11,8 +11,8 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #1a1a2e;
-  color: #eaeaea;
+  background: #111111;
+  color: #F7F7F4;
 }
 
 * {
@@ -23,7 +23,7 @@ body {
 /* Thin scrollbar for horizontal tempo rows */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #4b5563 transparent;
+  scrollbar-color: #3D3D3D transparent;
 }
 .scrollbar-thin::-webkit-scrollbar {
   height: 4px;
@@ -32,7 +32,7 @@ body {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
+  background-color: #3D3D3D;
   border-radius: 2px;
 }
 
@@ -50,6 +50,6 @@ body {
 
 /* WCAG AAA: ensure visible focus outlines globally */
 :focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid #F7F7F4;
   outline-offset: 2px;
 }

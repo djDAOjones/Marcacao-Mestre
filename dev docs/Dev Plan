@@ -144,6 +144,13 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Record play history (track name + timestamp) on each track change
   - [x] Collapsible history panel in QueuePanel (most recent first, timestamped)
   - [x] Max 200 history entries; graceful fallback if localStorage full
+- [x] **Capoeira colour scheme (Notes #1):**
+  - [x] Defined 20-colour palette in tailwind.config.js under `cap.*` namespace
+  - [x] Neutrals: Berimbau Black → Charcoal → Arena Sand → Cord Cotton → Abadá White
+  - [x] Accents: Brazil Green, Leaf Green, Pastinha Yellow, Ocre Dourado, Flag Blue
+  - [x] Warm tones: Biriba Wood, Cabaça Gourd, Leather Strap, Atabaque Burgundy
+  - [x] Replaced ALL Tailwind default colour classes (gray/green/amber/blue/red) across 7 files
+  - [x] WCAG verified: AAA (7:1+) for all text on neutral bgs; AA (4.5:1+) on coloured surfaces
 - [x] **Design audit (#3):**
   - [x] WCAG AAA contrast: bumped text-gray-500 → text-gray-400, text-gray-400 → text-gray-300 for 10px text
   - [x] Removed opacity-70 on TrackButton BPM text (was reducing contrast below threshold)

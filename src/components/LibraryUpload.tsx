@@ -97,7 +97,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
       <div className="text-center max-w-md">
         <h1 className="text-3xl font-bold mb-2">Marcação Mestre</h1>
-        <p className="text-gray-300 mb-8">
+        <p className="text-cap-cotton mb-8">
           Upload a library ZIP file containing your tracks and beat maps.
         </p>
 
@@ -120,31 +120,31 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
             w-full h-48 border-2 border-dashed rounded-xl
             cursor-pointer transition-colors
             ${isLoading 
-              ? 'border-gray-600 bg-gray-800/50' 
+              ? 'border-cap-600 bg-cap-900/50' 
               : isDragging
-                ? 'border-blue-400 bg-blue-900/30 scale-105'
-                : 'border-gray-600 hover:border-blue-500 hover:bg-gray-800/30'}
+                ? 'border-cap-yellow bg-cap-gold/10 scale-105'
+                : 'border-cap-600 hover:border-cap-yellow hover:bg-cap-900/30'}
           `}
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-              <span className="text-gray-400">Loading library...</span>
+              <Loader2 className="w-12 h-12 text-cap-yellow animate-spin mb-4" />
+              <span className="text-cap-sand">Loading library...</span>
             </>
           ) : isDragging ? (
             <>
-              <Upload className="w-12 h-12 text-blue-400 mb-4" />
-              <span className="text-blue-300 font-medium">
+              <Upload className="w-12 h-12 text-cap-yellow mb-4" />
+              <span className="text-cap-yellow font-medium">
                 Drop to load library
               </span>
             </>
           ) : (
             <>
-              <Upload className="w-12 h-12 text-gray-500 mb-4" />
-              <span className="text-gray-300 font-medium">
+              <Upload className="w-12 h-12 text-cap-500 mb-4" />
+              <span className="text-cap-cotton font-medium">
                 Click or drag to upload library.zip
               </span>
-              <span className="text-gray-400 text-sm mt-2">
+              <span className="text-cap-sand text-sm mt-2">
                 Contains MP3s, MIDI beat maps, and manifest.json
               </span>
             </>
@@ -157,24 +157,24 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
             onClick={loadDemoLibrary}
             disabled={isLoading}
             aria-label="Load demo library with sample Capoeira tracks"
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 
-                       text-white font-bold rounded-xl transition-colors
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="px-6 py-3 bg-cap-green hover:bg-cap-green/80 disabled:bg-cap-600 
+                       text-cap-white font-bold rounded-xl transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white"
           >
             Load Demo Library
           </button>
-          <p className="text-gray-400 text-sm mt-2">
+          <p className="text-cap-sand text-sm mt-2">
             Try the app with preloaded sample tracks
           </p>
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300" role="alert">
+          <div className="mt-4 p-3 bg-cap-burgundy/30 border border-cap-red rounded-lg text-cap-white" role="alert">
             <div className="flex items-center gap-2">
-              <AlertCircle size={18} className="flex-shrink-0" />
+              <AlertCircle size={18} className="flex-shrink-0 text-cap-red" />
               <span>{error}</span>
             </div>
-            <p className="text-red-400 text-xs mt-1 ml-[26px]">
+            <p className="text-cap-sand text-xs mt-1 ml-[26px]">
               Try reloading the page, or upload a different ZIP file.
             </p>
           </div>

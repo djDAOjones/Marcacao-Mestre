@@ -126,30 +126,30 @@ export function ControlBar({
 
   const getStatusColor = () => {
     switch (transportState.phase) {
-      case 'idle': return 'text-gray-400';
-      case 'playing': return transportState.isPaused ? 'text-yellow-400' : 'text-green-400';
-      case 'queued': return 'text-amber-400';
-      case 'mixing': return 'text-blue-400';
+      case 'idle': return 'text-cap-sand';
+      case 'playing': return transportState.isPaused ? 'text-cap-yellow' : 'text-cap-green';
+      case 'queued': return 'text-cap-gold';
+      case 'mixing': return 'text-cap-flag';
     }
   };
 
   const hasQueuedTrack = transportState.nextTrack !== null || transportState.phase === 'queued';
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-700" role="toolbar" aria-label="Playback controls">
+    <nav className="bg-cap-800 border-b border-cap-700" role="toolbar" aria-label="Playback controls">
       {/* Transport Status */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 text-sm" role="status" aria-live="polite">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-cap-800 text-sm" role="status" aria-live="polite">
         <div className="flex items-center gap-6">
           <div>
-            <span className="text-gray-400 mr-2">NOW:</span>
+            <span className="text-cap-sand mr-2">NOW:</span>
             <span className="font-medium">{transportState.currentTrack?.name ?? '—'}</span>
           </div>
           <div>
-            <span className="text-gray-400 mr-2">NEXT:</span>
-            <span className="font-medium text-amber-400">{transportState.nextTrack?.name ?? '—'}</span>
+            <span className="text-cap-sand mr-2">NEXT:</span>
+            <span className="font-medium text-cap-yellow">{transportState.nextTrack?.name ?? '—'}</span>
           </div>
           <div>
-            <span className="text-gray-400 mr-2">STATUS:</span>
+            <span className="text-cap-sand mr-2">STATUS:</span>
             <span className={getStatusColor()}>
               {getStatusText()}
             </span>
@@ -167,17 +167,17 @@ export function ControlBar({
               onKeyDown={handleBpmKeyDown}
               onBlur={handleBpmSubmit}
               autoFocus
-              className="w-20 px-2 py-1 text-xl font-mono font-bold text-amber-400 
-                         bg-gray-800 border border-amber-400 rounded text-center"
+              className="w-20 px-2 py-1 text-xl font-mono font-bold text-cap-yellow 
+                         bg-cap-900 border border-cap-yellow rounded text-center"
             />
-            <span className="text-xl font-mono font-bold text-amber-400">BPM</span>
+            <span className="text-xl font-mono font-bold text-cap-yellow">BPM</span>
           </div>
         ) : (
           <div
             onClick={handleBpmClick}
             onMouseDown={handleBpmDragStart}
             className={`text-xl font-mono font-bold cursor-ns-resize select-none
-                       ${settings.fixTempo ? 'text-green-400' : 'text-amber-400'}`}
+                       ${settings.fixTempo ? 'text-cap-green' : 'text-cap-yellow'}`}
             title="Click to edit, drag to adjust"
           >
             {Math.round(transportState.currentBpm)} BPM
@@ -196,10 +196,10 @@ export function ControlBar({
             aria-label={settings.duckOn ? 'Duck on – volume reduced' : 'Duck off – full volume'}
             className={`
               flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
               ${settings.duckOn 
-                ? 'bg-yellow-600 text-white' 
-                : 'bg-gray-700 text-gray-300'}
+                ? 'bg-cap-gold text-cap-black' 
+                : 'bg-cap-700 text-cap-cotton'}
             `}
           >
             {settings.duckOn ? <VolumeX size={24} /> : <Volume2 size={24} />}
@@ -215,10 +215,10 @@ export function ControlBar({
               aria-label="Settings menu"
               className={`
                 flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                 ${isSettingsOpen
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}
+                  ? 'bg-cap-600 text-cap-white'
+                  : 'bg-cap-700 text-cap-cotton hover:bg-cap-600'}
               `}
             >
               <Settings size={24} />
@@ -227,26 +227,26 @@ export function ControlBar({
 
             {isSettingsOpen && (
               <div
-                className="absolute top-full left-0 mt-2 w-72 bg-gray-800 border border-gray-600 rounded-xl shadow-xl z-50 overflow-hidden"
+                className="absolute top-full left-0 mt-2 w-72 bg-cap-900 border border-cap-600 rounded-xl shadow-xl z-50 overflow-hidden"
                 role="menu"
                 aria-label="Settings"
               >
                 {/* MIX / CUT Toggle */}
-                <div className="px-4 py-3 border-b border-gray-700">
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
+                <div className="px-4 py-3 border-b border-cap-700">
+                  <label className="text-xs font-semibold text-cap-sand uppercase tracking-wider mb-2 block">
                     Transition Mode
                   </label>
-                  <div className="flex items-center bg-gray-900 rounded-lg p-1">
+                  <div className="flex items-center bg-cap-black rounded-lg p-1">
                     <button
                       onClick={() => onSettingsChange({ transitionMode: 'mix' })}
                       aria-pressed={settings.transitionMode === 'mix'}
                       role="menuitemradio"
                       className={`
                         flex-1 px-4 py-2 rounded-md text-sm font-bold transition-colors
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                         ${settings.transitionMode === 'mix' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'text-gray-400 hover:text-white'}
+                          ? 'bg-cap-blue text-cap-white' 
+                          : 'text-cap-sand hover:text-cap-white'}
                       `}
                     >
                       MIX
@@ -257,16 +257,16 @@ export function ControlBar({
                       role="menuitemradio"
                       className={`
                         flex-1 px-4 py-2 rounded-md text-sm font-bold transition-colors
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                         ${settings.transitionMode === 'cut' 
-                          ? 'bg-orange-600 text-white' 
-                          : 'text-gray-400 hover:text-white'}
+                          ? 'bg-cap-gourd text-cap-white' 
+                          : 'text-cap-sand hover:text-cap-white'}
                       `}
                     >
                       CUT
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="text-[10px] text-cap-sand mt-1">
                     {settings.transitionMode === 'mix'
                       ? '2-bar crossfade with tempo slide'
                       : 'Instant switch at next bar'}
@@ -274,26 +274,26 @@ export function ControlBar({
                 </div>
 
                 {/* Tempo Lock Toggle */}
-                <div className="px-4 py-3 border-b border-gray-700">
+                <div className="px-4 py-3 border-b border-cap-700">
                   <button
                     onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
                     aria-pressed={settings.fixTempo}
                     role="menuitemcheckbox"
                     className={`
                       flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold transition-colors
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                       ${settings.fixTempo 
-                        ? 'bg-green-600/20 text-green-400 border border-green-600' 
-                        : 'bg-gray-900 text-gray-300 border border-gray-700 hover:border-gray-500'}
+                        ? 'bg-cap-green/20 text-cap-green border border-cap-green-deep' 
+                        : 'bg-cap-black text-cap-cotton border border-cap-700 hover:border-cap-500'}
                     `}
                   >
                     {settings.fixTempo ? <Lock size={18} /> : <Unlock size={18} />}
                     <span>TEMPO LOCK</span>
-                    <span className={`ml-auto text-xs ${settings.fixTempo ? 'text-green-400' : 'text-gray-400'}`}>
+                    <span className={`ml-auto text-xs ${settings.fixTempo ? 'text-cap-green' : 'text-cap-sand'}`}>
                       {settings.fixTempo ? 'ON' : 'OFF'}
                     </span>
                   </button>
-                  <p className="text-[10px] text-gray-400 mt-1 px-1">
+                  <p className="text-[10px] text-cap-sand mt-1 px-1">
                     {settings.fixTempo
                       ? 'Tracks time-stretch to match target BPM'
                       : 'Tracks play at native speed'}
@@ -318,10 +318,10 @@ export function ControlBar({
             aria-label="Rewind to start of current track"
             className={`
               flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
               ${transportState.phase === 'idle'
-                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : 'bg-gray-700 hover:bg-gray-600 text-white'
+                ? 'bg-cap-700 text-cap-500 cursor-not-allowed'
+                : 'bg-cap-700 hover:bg-cap-600 text-cap-white'
               }
             `}
           >
@@ -335,10 +335,10 @@ export function ControlBar({
             aria-label="Skip to next queued track"
             className={`
               flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
               ${!hasQueuedTrack || transportState.phase === 'mixing'
-                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-500 text-white'
+                ? 'bg-cap-700 text-cap-500 cursor-not-allowed'
+                : 'bg-cap-blue hover:bg-cap-blue/80 text-cap-white'
               }
             `}
           >
@@ -353,12 +353,12 @@ export function ControlBar({
             aria-label={transportState.isPaused ? 'Resume playback' : 'Pause playback'}
             className={`
               flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
               ${transportState.phase === 'idle'
-                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                ? 'bg-cap-700 text-cap-500 cursor-not-allowed'
                 : transportState.isPaused
-                  ? 'bg-green-600 hover:bg-green-500 text-white'
-                  : 'bg-amber-600 hover:bg-amber-500 text-white'
+                  ? 'bg-cap-green hover:bg-cap-green/80 text-cap-white'
+                  : 'bg-cap-gold hover:bg-cap-gold/80 text-cap-black'
               }
             `}
           >
@@ -403,10 +403,10 @@ function ClearQueueButton({ onClearQueue, onClose }: { onClearQueue: () => void;
         className={`
           flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold
           transition-colors
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
           ${confirming
-            ? 'text-white bg-red-700 border border-red-500'
-            : 'text-red-400 bg-gray-900 border border-gray-700 hover:border-red-500 hover:bg-red-900/20'}
+            ? 'text-cap-white bg-cap-red border border-cap-red'
+            : 'text-cap-red bg-cap-black border border-cap-700 hover:border-cap-red hover:bg-cap-burgundy/20'}
         `}
       >
         <Trash2 size={18} />

@@ -1,1 +1,1 @@
-## in cut mode, make it so that it cuts at the next bar onset and the beats of the two tracks aligned on that bar downbeat
+#1 pause (or stop) should pause the track and when resumed do rewind 1s, then 0.5s fade-up. the user can use rewind button to start track again.
