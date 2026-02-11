@@ -39,7 +39,7 @@ export function TrackGrid({
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3 bg-cap-bg" role="region" aria-label="Track library">
+    <div className="flex flex-col gap-4 p-3 bg-cap-bg" role="region" aria-label="Track library">
       {tempoRows.map((row) => (
         <section
           key={row.label}

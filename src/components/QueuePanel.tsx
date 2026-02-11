@@ -126,7 +126,7 @@ export function QueuePanel({
 
   return (
     <aside
-      className="flex flex-col h-full bg-cap-panel/95 border-l border-cap-border w-[200px] min-w-[200px]"
+      className="flex flex-col h-full bg-cap-panel/95 border-l border-cap-border w-[240px] min-w-[240px]"
       role="complementary"
       aria-label="Playback queue"
     >
@@ -289,7 +289,7 @@ function QueueEntry({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={`
-        flex items-center gap-1 px-2 py-2
+        flex items-center gap-1.5 px-2 py-2.5
         border-l-4 ${style.border} ${style.bg}
         border-b border-cap-border-sub
         overflow-hidden
@@ -312,7 +312,7 @@ function QueueEntry({
       )}
 
       {/* Position label */}
-      <span className={`text-xs font-bold uppercase w-6 flex-shrink-0 ${style.labelColor}`} aria-hidden="true">
+      <span className={`text-xs font-bold uppercase w-10 flex-shrink-0 ${style.labelColor}`} aria-hidden="true">
         {label}
       </span>
 

@@ -308,7 +308,7 @@ export function ControlBar({
                 )}
 
                 {/* Theme Toggle */}
-                <div className="px-4 py-3">
+                <div className="px-4 py-3 border-t border-cap-border">
                   <button
                     onClick={toggleTheme}
                     role="menuitem"
