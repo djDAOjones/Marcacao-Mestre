@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   transitionMode: 'mix',
   fixTempo: false,
   targetBpm: 120,
+  mixBars: 2,
   duckOn: false,
   duckLevel: 0.18,
 };
@@ -66,8 +67,9 @@ function App() {
       transitionMode: settings.transitionMode,
       duckLevel: settings.duckLevel,
       fixTempo: settings.fixTempo,
+      mixBars: settings.mixBars,
     });
-  }, [settings.transitionMode, settings.duckLevel, settings.fixTempo]);
+  }, [settings.transitionMode, settings.duckLevel, settings.fixTempo, settings.mixBars]);
 
   useEffect(() => {
     dualDeckEngine.setFixTempo(settings.fixTempo);

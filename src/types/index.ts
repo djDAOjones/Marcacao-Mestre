@@ -95,6 +95,7 @@ export interface AppSettings {
   transitionMode: TransitionMode;
   fixTempo: boolean;
   targetBpm: number;
+  mixBars: 1 | 2 | 4;
   duckOn: boolean;
   duckLevel: number;
 }

@@ -47,6 +47,7 @@ export interface EngineConfig {
   transitionMode: TransitionMode;
   duckLevel: number;
   fixTempo: boolean;
+  mixBars: 1 | 2 | 4;
 }
 
 type DeckId = 'A' | 'B';
@@ -85,6 +86,7 @@ class DualDeckEngine {
     transitionMode: 'mix',
     duckLevel: 0.18,
     fixTempo: false,
+    mixBars: 2,
   };
 
   private targetBpm: number = 120;
@@ -204,18 +206,21 @@ class DualDeckEngine {
       activeDeck?.setVolume(outVolume);
       inactiveDeck?.setVolume(inVolume);
       
-      // Tempo slide: interpolate from current native to incoming native
-      const currentNative = activeDeck?.getNativeBpm() ?? 120;
-      const incomingNative = inactiveDeck?.getNativeBpm() ?? 120;
-      const slidingBpm = currentNative + (incomingNative - currentNative) * progress;
-      
-      const outRate = slidingBpm / currentNative;
-      const inRate = slidingBpm / incomingNative;
-      
-      activeDeck?.setPlaybackRate(outRate);
-      inactiveDeck?.setPlaybackRate(inRate);
-      
-      this.targetBpm = slidingBpm;
+      // Tempo slide (only when tempo lock is OFF)
+      if (!this.config.fixTempo) {
+        const currentNative = activeDeck?.getNativeBpm() ?? 120;
+        const incomingNative = inactiveDeck?.getNativeBpm() ?? 120;
+        const slidingBpm = currentNative + (incomingNative - currentNative) * progress;
+        
+        const outRate = slidingBpm / currentNative;
+        const inRate = slidingBpm / incomingNative;
+        
+        activeDeck?.setPlaybackRate(outRate);
+        inactiveDeck?.setPlaybackRate(inRate);
+        
+        this.targetBpm = slidingBpm;
+      }
+      // When fixTempo is ON, both decks already play at the locked rate — no slide needed
       
       if (progress >= 1) {
         this.completeMix();
@@ -246,7 +251,8 @@ class DualDeckEngine {
           const beatMap = activeDeck.getBeatMap();
           const beatsPerBar = beatMap?.timeSignature.numerator ?? 4;
           const barDurationBuffer = beatsPerBar * (60 / nativeBpm); // bar duration in buffer-time
-          const twoBars = 2 * barDurationBuffer;
+          const mixBarsBeforeEnd = this.config.mixBars;
+          const twoBars = mixBarsBeforeEnd * barDurationBuffer;
           
           // Safety: don't schedule if duration looks invalid
           if (duration <= 0 || !Number.isFinite(duration) || !Number.isFinite(nativeBpm) || nativeBpm <= 0) {
@@ -306,16 +312,22 @@ class DualDeckEngine {
     }
     
     // MIX mode: 2-bar quantised crossfade with tempo slide
-    // Start incoming at current track's tempo (will slide during mix)
-    const currentRate = activeDeck.getNativeBpm() / inactiveDeck.getNativeBpm();
-    inactiveDeck.setPlaybackRate(currentRate);
+    if (this.config.fixTempo) {
+      // Tempo lock: both decks play at locked rate — no slide
+      const inRate = this.targetBpm / inactiveDeck.getNativeBpm();
+      inactiveDeck.setPlaybackRate(inRate);
+    } else {
+      // Start incoming at current track's tempo (will slide during mix)
+      const currentRate = activeDeck.getNativeBpm() / inactiveDeck.getNativeBpm();
+      inactiveDeck.setPlaybackRate(currentRate);
+    }
     
-    // Calculate mix duration: 2 bars
+    // Calculate mix duration using configured bar count
     const beatMap = activeDeck.getBeatMap();
     const bpm = activeDeck.getEffectiveBpm();
     const beatsPerBar = beatMap?.timeSignature.numerator ?? 4;
     const barDuration = (60 / bpm) * beatsPerBar;
-    const mixBars = 2;
+    const mixBars = this.config.mixBars;
     this.mixDuration = barDuration * mixBars;
     
     console.log(`[DualDeck] MIX starting: ${mixBars} bars = ${this.mixDuration.toFixed(2)}s at ${bpm.toFixed(1)} BPM`);
@@ -390,8 +402,10 @@ class DualDeckEngine {
     // Swap active deck
     this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';
     
-    // Update target BPM to new track's native BPM
-    this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
+    // Update target BPM: preserve locked BPM, or adopt new track's native
+    if (!this.config.fixTempo) {
+      this.targetBpm = this.getActiveDeck()?.getNativeBpm() ?? 120;
+    }
     
     this.phase = 'playing';
     this.forceImmediateMix = false;
@@ -473,9 +487,15 @@ class DualDeckEngine {
     await deck.loadTrack(track);
     console.log(`[DualDeck] Track loaded into deck`);
     
-    // Play at native BPM (no stretching on initial play)
-    deck.setPlaybackRate(1);
-    this.targetBpm = getNativeBpm(track.beatMap);
+    // Respect tempo lock: if fixTempo is ON, stretch to targetBpm
+    if (this.config.fixTempo) {
+      const nativeBpm = getNativeBpm(track.beatMap);
+      deck.setPlaybackRate(this.targetBpm / nativeBpm);
+      console.log(`[DualDeck] Playing at locked ${this.targetBpm.toFixed(1)} BPM (native ${nativeBpm.toFixed(1)})`);
+    } else {
+      deck.setPlaybackRate(1);
+      this.targetBpm = getNativeBpm(track.beatMap);
+    }
     
     // Start at zero volume with quick fade-in to mask SoundTouch startup artifacts
     deck.setVolume(0);

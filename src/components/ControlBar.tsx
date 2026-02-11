@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import {
+import { 
   Pause, Play, SkipBack, SkipForward,
-  Volume2, VolumeX, Lock, Unlock,
-  Settings, Trash2, Sun, Moon,
+  VolumeX, Lock, Unlock,
+  Settings, Trash2, Sun, Moon, Mic,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import type { AppSettings } from '../types';
@@ -191,24 +191,7 @@ export function ControlBar({
       {/* Controls - Large buttons for tablet tapping */}
       <div className="flex items-center justify-between px-4 py-4">
         <div className="flex items-center gap-4">
-          {/* Duck Toggle — always visible (frequent use during class) */}
-          <button
-            onClick={() => onSettingsChange({ duckOn: !settings.duckOn })}
-            aria-pressed={settings.duckOn}
-            aria-label={settings.duckOn ? 'Duck on – volume reduced' : 'Duck off – full volume'}
-            className={`
-              flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
-              ${settings.duckOn 
-                ? 'bg-cap-gold-vivid text-cap-ink' 
-                : 'bg-cap-btn text-cap-text-sec'}
-            `}
-          >
-            {settings.duckOn ? <VolumeX size={24} /> : <Volume2 size={24} />}
-            DUCK
-          </button>
-
-          {/* Settings Dropdown — contains MIX/CUT, Tempo Lock, Clear Queue */}
+          {/* Settings Dropdown — contains MIX/CUT, Tempo Lock, Mix Duration, Clear Queue */}
           <div className="relative" ref={settingsRef}>
             <button
               onClick={() => setIsSettingsOpen(prev => !prev)}
@@ -270,8 +253,8 @@ export function ControlBar({
                   </div>
                   <p className="text-xs text-cap-muted mt-1">
                     {settings.transitionMode === 'mix'
-                      ? '2-bar crossfade with tempo slide'
-                      : 'Instant switch at next bar'}
+                      ? `${settings.mixBars}-bar crossfade with tempo slide`
+                      : 'Bar-aligned switch with 1-beat fade'}
                   </p>
                 </div>
 
@@ -302,6 +285,35 @@ export function ControlBar({
                   </p>
                 </div>
 
+                {/* Mix Duration (1/2/4 bars) */}
+                <div className="px-4 py-3 border-b border-cap-border">
+                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
+                    Mix Duration
+                  </label>
+                  <div className="flex items-center bg-cap-bg rounded-lg p-1">
+                    {([1, 2, 4] as const).map((bars) => (
+                      <button
+                        key={bars}
+                        onClick={() => onSettingsChange({ mixBars: bars })}
+                        aria-pressed={settings.mixBars === bars}
+                        role="menuitemradio"
+                        className={`
+                          flex-1 px-3 py-2 rounded-md text-base font-bold transition-colors
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
+                          ${settings.mixBars === bars
+                            ? 'bg-cap-blue-vivid text-cap-paper'
+                            : 'text-cap-muted hover:text-cap-text'}
+                        `}
+                      >
+                        {bars} BAR{bars > 1 ? 'S' : ''}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-cap-muted mt-1">
+                    Crossfade length for MIX transitions
+                  </p>
+                </div>
+
                 {/* Clear Queue — two-step confirmation (Nielsen #5: error prevention) */}
                 {onClearQueue && (
                   <ClearQueueButton onClearQueue={onClearQueue} onClose={() => setIsSettingsOpen(false)} />
@@ -328,7 +340,24 @@ export function ControlBar({
 
         {/* Transport Buttons */}
         <div className="flex items-center gap-3">
-          {/* REWIND Button - restart current track */}
+          {/* TALK Toggle — duck music for session leader to speak */}
+          <button
+            onClick={() => onSettingsChange({ duckOn: !settings.duckOn })}
+            aria-pressed={settings.duckOn}
+            aria-label={settings.duckOn ? 'Talk mode on – music ducked' : 'Talk mode off – full volume'}
+            className={`
+              flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
+              ${settings.duckOn 
+                ? 'bg-cap-gold-vivid text-cap-ink' 
+                : 'bg-cap-btn text-cap-text-sec'}
+            `}
+          >
+            {settings.duckOn ? <VolumeX size={24} /> : <Mic size={24} />}
+            TALK
+          </button>
+
+          {/* BACK Button - restart current track */}
           <button
             onClick={onRewind}
             disabled={transportState.phase === 'idle'}
