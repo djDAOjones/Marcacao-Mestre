@@ -126,13 +126,13 @@ export function QueuePanel({
 
   return (
     <aside
-      className="flex flex-col h-full bg-cap-800/95 border-l border-cap-700 w-[200px] min-w-[200px]"
+      className="flex flex-col h-full bg-cap-panel/95 border-l border-cap-border w-[200px] min-w-[200px]"
       role="complementary"
       aria-label="Playback queue"
     >
       {/* Header */}
-      <div className="px-3 py-2 border-b border-cap-700">
-        <h2 className="text-sm font-semibold text-cap-sand uppercase tracking-wider select-none">
+      <div className="px-3 py-2 border-b border-cap-border">
+        <h2 className="text-sm font-semibold text-cap-muted uppercase tracking-wider select-none">
           Queue
         </h2>
       </div>
@@ -140,7 +140,7 @@ export function QueuePanel({
       {/* Queue list */}
       <div className="flex-1 overflow-y-auto" role="list" aria-label="Queued tracks">
         {!hasContent && (
-          <div className="flex flex-col items-center justify-center h-full text-cap-sand text-sm px-4 text-center">
+          <div className="flex flex-col items-center justify-center h-full text-cap-muted text-sm px-4 text-center">
             <Music size={24} className="mb-2 opacity-50" />
             <span>No tracks queued</span>
             <span className="mt-1 text-xs">Click a track to queue it</span>
@@ -187,10 +187,10 @@ export function QueuePanel({
 
       {/* Play History (collapsible) */}
       {playHistory.length > 0 && (
-        <div className="border-t border-cap-700">
+        <div className="border-t border-cap-border">
           <button
             onClick={() => setShowHistory(prev => !prev)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-cap-sand uppercase tracking-wider hover:text-cap-cotton transition-colors select-none"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-cap-muted uppercase tracking-wider hover:text-cap-text-sec transition-colors select-none"
             aria-expanded={showHistory}
             aria-controls="play-history-list"
           >
@@ -208,12 +208,12 @@ export function QueuePanel({
               {[...playHistory].reverse().map((entry, i) => (
                 <div
                   key={`${entry.trackId}-${entry.playedAt}`}
-                  className="flex items-center gap-2 px-3 py-1.5 border-b border-cap-800/50 text-xs"
+                  className="flex items-center gap-2 px-3 py-1.5 border-b border-cap-border-sub/50 text-xs"
                   role="listitem"
                 >
-                  <span className="text-cap-sand tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
-                  <span className="text-cap-cotton truncate flex-1">{entry.trackName}</span>
-                  <span className="text-cap-sand tabular-nums flex-shrink-0">
+                  <span className="text-cap-muted tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
+                  <span className="text-cap-text-sec truncate flex-1">{entry.trackName}</span>
+                  <span className="text-cap-muted tabular-nums flex-shrink-0">
                     {new Date(entry.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -247,19 +247,19 @@ interface QueueEntryProps {
 
 const variantStyles: Record<EntryVariant, { bg: string; border: string; labelColor: string }> = {
   playing: {
-    bg: 'bg-cap-green-deep/20',
+    bg: 'bg-cap-green-vivid/15',
     border: 'border-l-cap-green',
     labelColor: 'text-cap-green',
   },
   next: {
-    bg: 'bg-cap-gold/15',
+    bg: 'bg-cap-gold-vivid/15',
     border: 'border-l-cap-yellow',
     labelColor: 'text-cap-yellow',
   },
   queued: {
-    bg: 'bg-cap-900/40',
+    bg: 'bg-cap-surface/40',
     border: 'border-l-cap-wood',
-    labelColor: 'text-cap-sand',
+    labelColor: 'text-cap-muted',
   },
 };
 
@@ -291,7 +291,7 @@ function QueueEntry({
       className={`
         flex items-center gap-1 px-2 py-2
         border-l-4 ${style.border} ${style.bg}
-        border-b border-cap-800
+        border-b border-cap-border-sub
         overflow-hidden
         group
         ${isDragging ? 'opacity-40' : ''}
@@ -306,7 +306,7 @@ function QueueEntry({
     >
       {/* Drag handle (only for draggable items) */}
       {isDraggable && (
-        <span className="flex-shrink-0 text-cap-600 group-hover:text-cap-sand transition-colors" aria-hidden="true">
+        <span className="flex-shrink-0 text-cap-disabled group-hover:text-cap-muted transition-colors" aria-hidden="true">
           <GripVertical size={12} />
         </span>
       )}
@@ -318,10 +318,10 @@ function QueueEntry({
 
       {/* Track info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-cap-white truncate leading-tight">
+        <p className="text-sm font-medium text-cap-text truncate leading-tight">
           {track.name}
         </p>
-        <p className="text-xs font-mono tabular-nums text-cap-cotton">
+        <p className="text-xs font-mono tabular-nums text-cap-text-sec">
           {bpm} BPM
         </p>
       </div>
@@ -332,10 +332,10 @@ function QueueEntry({
           onClick={onRemove}
           className="
             flex-shrink-0 p-1 rounded
-            text-cap-500 hover:text-cap-red hover:bg-cap-burgundy/30
+            text-cap-disabled hover:text-cap-red hover:bg-cap-burgundy-vivid/30
             opacity-0 group-hover:opacity-100 focus-visible:opacity-100
             transition-opacity duration-100
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
           "
           aria-label={`Remove ${track.name} from queue`}
           title="Remove from queue"

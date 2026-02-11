@@ -8,40 +8,44 @@ export default {
     extend: {
       colors: {
         cap: {
-          /* ── Neutral scale (dark → light) ── */
-          black:   '#111111',  // Berimbau Black — body bg
-          950:     '#1A1A1A',  // deep surface
-          900:     '#1E1E1E',  // card / dropdown bg
-          800:     '#2B2B2B',  // Charcoal — nav / sidebar
-          700:     '#3D3D3D',  // buttons / borders
-          600:     '#4A4A4A',  // button hover
-          500:     '#6B6B6B',  // disabled text
+          /* ── Adaptive neutrals (CSS vars, swap in light / dark) ── */
+          bg:          'rgb(var(--cap-bg) / <alpha-value>)',
+          surface:     'rgb(var(--cap-surface) / <alpha-value>)',
+          panel:       'rgb(var(--cap-panel) / <alpha-value>)',
+          btn:         'rgb(var(--cap-btn) / <alpha-value>)',
+          'btn-hover': 'rgb(var(--cap-btn-hover) / <alpha-value>)',
+          border:      'rgb(var(--cap-border) / <alpha-value>)',
+          'border-sub':'rgb(var(--cap-border-sub) / <alpha-value>)',
+          text:        'rgb(var(--cap-text) / <alpha-value>)',
+          'text-sec':  'rgb(var(--cap-text-sec) / <alpha-value>)',
+          muted:       'rgb(var(--cap-muted) / <alpha-value>)',
+          disabled:    'rgb(var(--cap-disabled) / <alpha-value>)',
 
-          /* ── Warm text scale ── */
-          sand:    '#D8C3A5',  // Arena Sand — muted labels
-          cotton:  '#E8E2D5',  // Cord Cotton — secondary text
-          white:   '#F7F7F4',  // Abadá White — primary text
+          /* ── Adaptive accents (CSS vars, contrast-adjusted per theme) ── */
+          green:       'rgb(var(--cap-green) / <alpha-value>)',
+          'green-deep':'rgb(var(--cap-green-deep) / <alpha-value>)',
+          yellow:      'rgb(var(--cap-yellow) / <alpha-value>)',
+          gold:        'rgb(var(--cap-gold) / <alpha-value>)',
+          flag:        'rgb(var(--cap-flag) / <alpha-value>)',
+          blue:        'rgb(var(--cap-blue) / <alpha-value>)',
+          red:         'rgb(var(--cap-red) / <alpha-value>)',
+          burgundy:    'rgb(var(--cap-burgundy) / <alpha-value>)',
+          wood:        'rgb(var(--cap-wood) / <alpha-value>)',
+          gourd:       'rgb(var(--cap-gourd) / <alpha-value>)',
+          leather:     'rgb(var(--cap-leather) / <alpha-value>)',
 
-          /* ── Accent: greens ── */
-          green:       '#009C3B',  // Brazil Green — playing state
-          'green-deep':'#2E7D32',  // Leaf Green — green backgrounds
+          /* ── Vivid accent backgrounds (fixed, theme-independent) ── */
+          'green-vivid':      '#009C3B',
+          'green-deep-vivid': '#2E7D32',
+          'gold-vivid':       '#C9A227',
+          'blue-vivid':       '#002776',
+          'red-vivid':        '#C62828',
+          'gourd-vivid':      '#C98A2E',
+          'burgundy-vivid':   '#6D213C',
 
-          /* ── Accent: yellows / golds ── */
-          yellow:  '#F4C300',  // Pastinha Yellow — BPM, queued
-          gold:    '#C9A227',  // Ocre Dourado — muted yellow
-          flag:    '#FFDF00',  // Flag Yellow — highlight
-
-          /* ── Accent: blue ── */
-          blue:    '#002776',  // Flag Blue — buttons
-
-          /* ── Accent: reds ── */
-          red:     '#C62828',  // Rasteira Red — alerts
-          burgundy:'#6D213C',  // Atabaque Burgundy — deep accent
-
-          /* ── Warm instrument tones ── */
-          wood:    '#8B5E3C',  // Biriba Wood
-          gourd:   '#C98A2E',  // Cabaça Gourd
-          leather: '#5A3A22',  // Leather Strap
+          /* ── Fixed neutrals (always same regardless of theme) ── */
+          ink:   '#111111',   // always dark (text on vivid buttons)
+          paper: '#F7F7F4',   // always light (text on vivid buttons)
         },
       },
       keyframes: {

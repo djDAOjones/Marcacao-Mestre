@@ -6,13 +6,66 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* ── Light mode (default) ── */
+  --cap-bg: 247 247 244;
+  --cap-surface: 255 255 255;
+  --cap-panel: 242 239 230;
+  --cap-btn: 228 222 210;
+  --cap-btn-hover: 216 210 195;
+  --cap-border: 195 185 168;
+  --cap-border-sub: 220 215 205;
+  --cap-text: 17 17 17;
+  --cap-text-sec: 55 50 40;
+  --cap-muted: 110 95 70;
+  --cap-disabled: 140 130 110;
+
+  --cap-green: 0 100 38;
+  --cap-green-deep: 30 85 35;
+  --cap-yellow: 130 100 0;
+  --cap-gold: 120 92 10;
+  --cap-flag: 130 100 0;
+  --cap-blue: 0 39 118;
+  --cap-red: 180 35 35;
+  --cap-burgundy: 109 33 60;
+  --cap-wood: 115 80 48;
+  --cap-gourd: 160 110 36;
+  --cap-leather: 90 58 34;
+}
+
+.dark {
+  /* ── Dark mode ── */
+  --cap-bg: 17 17 17;
+  --cap-surface: 30 30 30;
+  --cap-panel: 43 43 43;
+  --cap-btn: 61 61 61;
+  --cap-btn-hover: 74 74 74;
+  --cap-border: 61 61 61;
+  --cap-border-sub: 43 43 43;
+  --cap-text: 247 247 244;
+  --cap-text-sec: 232 226 213;
+  --cap-muted: 216 195 165;
+  --cap-disabled: 107 107 107;
+
+  --cap-green: 0 156 59;
+  --cap-green-deep: 46 125 50;
+  --cap-yellow: 244 195 0;
+  --cap-gold: 201 162 39;
+  --cap-flag: 255 223 0;
+  --cap-blue: 0 39 118;
+  --cap-red: 198 40 40;
+  --cap-burgundy: 109 33 60;
+  --cap-wood: 139 94 60;
+  --cap-gourd: 201 138 46;
+  --cap-leather: 90 58 34;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: #111111;
-  color: #F7F7F4;
+  background: rgb(var(--cap-bg));
+  color: rgb(var(--cap-text));
+  transition: background-color 200ms, color 200ms;
 }
 
 * {
@@ -23,7 +76,7 @@ body {
 /* Thin scrollbar for horizontal tempo rows */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #3D3D3D transparent;
+  scrollbar-color: rgb(var(--cap-border)) transparent;
 }
 .scrollbar-thin::-webkit-scrollbar {
   height: 4px;
@@ -32,7 +85,7 @@ body {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #3D3D3D;
+  background-color: rgb(var(--cap-border));
   border-radius: 2px;
 }
 
@@ -50,6 +103,6 @@ body {
 
 /* WCAG AAA: ensure visible focus outlines globally */
 :focus-visible {
-  outline: 2px solid #F7F7F4;
+  outline: 2px solid rgb(var(--cap-text));
   outline-offset: 2px;
 }

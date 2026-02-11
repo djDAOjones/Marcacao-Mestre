@@ -15,12 +15,12 @@ interface TrackButtonProps {
  * Colours chosen from IBM Carbon palette for high-contrast dark theme.
  */
 const stateStyles: Record<TrackState, string> = {
-  idle:        'bg-cap-700 hover:bg-cap-600 border-cap-500 text-cap-white',
-  queued:      'bg-cap-gold hover:bg-cap-gold/80 border-cap-yellow text-cap-black animate-pulse',
-  playing:     'bg-cap-green-deep hover:bg-cap-green border-cap-green text-cap-white',
-  'mixing-out':'bg-cap-green-deep/60 border-cap-green/60 text-cap-white/80',
-  'mixing-in': 'bg-cap-green border-cap-green text-cap-white animate-pulse',
-  disabled:    'bg-cap-900 border-cap-700 text-cap-500 cursor-not-allowed',
+  idle:        'bg-cap-btn hover:bg-cap-btn-hover border-cap-border text-cap-text',
+  queued:      'bg-cap-gold-vivid hover:bg-cap-gold-vivid/80 border-cap-yellow text-cap-ink animate-pulse',
+  playing:     'bg-cap-green-deep-vivid hover:bg-cap-green-vivid border-cap-green text-cap-paper',
+  'mixing-out':'bg-cap-green-deep-vivid/60 border-cap-green/60 text-cap-paper/80',
+  'mixing-in': 'bg-cap-green-vivid border-cap-green text-cap-paper animate-pulse',
+  disabled:    'bg-cap-surface border-cap-border text-cap-disabled cursor-not-allowed',
 };
 
 const stateAriaLabels: Record<TrackState, string> = {
@@ -58,14 +58,14 @@ export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTrip
         transition-all duration-150
         active:scale-95
         select-none
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white focus-visible:ring-offset-2 focus-visible:ring-offset-cap-black
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text focus-visible:ring-offset-2 focus-visible:ring-offset-cap-bg
         ${stateStyles[state]}
       `}
     >
       <span className="px-1 break-words leading-tight line-clamp-2">
         {track.name}
       </span>
-      <span className="text-xs text-cap-cotton font-mono tabular-nums">
+      <span className="text-xs text-cap-text-sec font-mono tabular-nums">
         {bpm} BPM
       </span>
     </button>
