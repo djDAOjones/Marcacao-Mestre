@@ -4,6 +4,12 @@ import { TrackGrid } from './components/TrackGrid';
 import { QueuePanel } from './components/QueuePanel';
 import { LibraryUpload } from './components/LibraryUpload';
 import { dualDeckEngine, type TransportState } from './lib/dualDeckEngine';
+import {
+  saveSession,
+  restoreSession,
+  appendHistory,
+  type HistoryEntry,
+} from './lib/sessionPersistence';
 import type { Library, Track, AppSettings } from './types';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -30,10 +36,14 @@ function App() {
     isPaused: false,
   });
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [playHistory, setPlayHistory] = useState<HistoryEntry[]>([]);
 
   // Ref to tracks so the auto-advance callback always has the latest list
   const tracksRef = useRef<Track[]>([]);
   tracksRef.current = tracks;
+
+  // Track the last-known current track ID to detect track changes for history
+  const lastCurrentTrackIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let animationId: number;
@@ -93,6 +103,19 @@ function App() {
   const handleLibraryLoaded = useCallback((lib: Library, loadedTracks: Track[]) => {
     setLibrary(lib);
     setTracks(loadedTracks);
+
+    // Restore saved session (queue + history) for this library
+    const saved = restoreSession(lib.id, loadedTracks);
+    if (saved) {
+      setPlayHistory(saved.history);
+      // Re-queue saved items
+      if (saved.queue.length > 0) {
+        for (const item of saved.queue) {
+          dualDeckEngine.addToQueue(item.track, 'end');
+        }
+        console.log(`[App] Restored ${saved.queue.length} queued tracks from session`);
+      }
+    }
   }, []);
 
   // Single click: add to end of queue (or play immediately if nothing playing)
@@ -161,6 +184,35 @@ function App() {
     dualDeckEngine.reorderQueue(fromIndex, toIndex);
   }, []);
 
+  // ---------- Session persistence ----------
+
+  // Record play history when the current track changes
+  useEffect(() => {
+    const currentId = transportState.currentTrack?.id ?? null;
+    if (currentId && currentId !== lastCurrentTrackIdRef.current) {
+      setPlayHistory(prev => appendHistory(prev, transportState.currentTrack!));
+    }
+    lastCurrentTrackIdRef.current = currentId;
+  }, [transportState.currentTrack]);
+
+  // Debounced save of queue + history whenever they change
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!library) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveSession(
+        library.id,
+        transportState.queue,
+        transportState.currentTrack?.id ?? null,
+        playHistory,
+      );
+    }, 500);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [library, transportState.queue, transportState.currentTrack, playHistory]);
+
   // Derive queued track IDs for highlighting in the grid
   const queuedTrackIds = transportState.queue.map(q => q.track.id);
 
@@ -202,6 +254,7 @@ function App() {
           queue={transportState.queue}
           onRemoveFromQueue={handleRemoveFromQueue}
           onReorder={handleReorderQueue}
+          playHistory={playHistory}
         />
       </div>
     </div>

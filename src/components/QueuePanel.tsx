@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { X, Music, GripVertical } from 'lucide-react';
+import { X, Music, GripVertical, Clock } from 'lucide-react';
 import type { Track, QueueItem } from '../types';
+import type { HistoryEntry } from '../lib/sessionPersistence';
 import { getTrackBpm } from '../lib/tempoGrouping';
 
 /** Animation duration in ms — matches Carbon productive-motion token */
@@ -17,6 +18,8 @@ export interface QueuePanelProps {
   onRemoveFromQueue: (itemId: string) => void;
   /** Callback when user drags a queue item to reorder */
   onReorder: (fromIndex: number, toIndex: number) => void;
+  /** Play history entries (most recent last) */
+  playHistory?: HistoryEntry[];
 }
 
 /**
@@ -35,7 +38,9 @@ export function QueuePanel({
   queue,
   onRemoveFromQueue,
   onReorder,
+  playHistory = [],
 }: QueuePanelProps) {
+  const [showHistory, setShowHistory] = useState(false);
   const hasContent = currentTrack || nextTrack || queue.length > 0;
 
   // --- Drag-and-drop state ---
@@ -179,6 +184,44 @@ export function QueuePanel({
           />
         ))}
       </div>
+
+      {/* Play History (collapsible) */}
+      {playHistory.length > 0 && (
+        <div className="border-t border-gray-700">
+          <button
+            onClick={() => setShowHistory(prev => !prev)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors select-none"
+            aria-expanded={showHistory}
+            aria-controls="play-history-list"
+          >
+            <Clock size={12} />
+            History ({playHistory.length})
+            <span className={`ml-auto transition-transform duration-150 ${showHistory ? 'rotate-180' : ''}`}>▾</span>
+          </button>
+          {showHistory && (
+            <div
+              id="play-history-list"
+              className="max-h-40 overflow-y-auto"
+              role="list"
+              aria-label="Play history"
+            >
+              {[...playHistory].reverse().map((entry, i) => (
+                <div
+                  key={`${entry.trackId}-${entry.playedAt}`}
+                  className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800/50 text-[10px]"
+                  role="listitem"
+                >
+                  <span className="text-gray-500 tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
+                  <span className="text-gray-300 truncate flex-1">{entry.trackName}</span>
+                  <span className="text-gray-500 tabular-nums flex-shrink-0">
+                    {new Date(entry.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 }

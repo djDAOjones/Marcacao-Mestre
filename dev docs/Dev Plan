@@ -138,9 +138,12 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Graceful degradation beyond those bounds
 - [ ] Tablet layout testing
 - [ ] Error handling + validation feedback
-- [ ] **Persist queue & play history (#7):**
-  - [ ] Save current queue to IndexedDB; restore on page reload
-  - [ ] Record play history (track + timestamp); persist across reloads
+- [x] **Persist queue & play history (#7):**
+  - [x] Save queue + history to localStorage (debounced, scoped per library)
+  - [x] Restore queue on library load; re-queue saved items into engine
+  - [x] Record play history (track name + timestamp) on each track change
+  - [x] Collapsible history panel in QueuePanel (most recent first, timestamped)
+  - [x] Max 200 history entries; graceful fallback if localStorage full
 - [ ] **Design audit (#3):**
   - [ ] Cross-check against IBM Carbon Design System principles
   - [ ] Verify WCAG AAA compliance (contrast, ARIA, keyboard nav)
@@ -159,11 +162,12 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [ ] **Presentation clicker control (#5):**
   - [ ] Map clicker buttons (next/prev/blank) to app actions
   - [ ] Clicker hardware TBD
-- [ ] **Play history UI (#6):**
-  - [ ] View past tracks played in session
-  - [ ] Navigate back to a previously played track
+- [x] **Play history UI (#6):**
+  - [x] Collapsible history section in QueuePanel (most recent first)
+  - [x] Shows track name + timestamp for each play
+  - [ ] Navigate back to a previously played track (future enhancement)
 
 ---
 
 ## Current Status
-**Phase 4 in progress — bugs fixed, modularity done, implementing UI refinements (queue animation, rewind, advanced menu)**
+**Phase 4 complete. Phase 5 in progress — persist queue & history done, design audit next.**
