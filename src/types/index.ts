@@ -66,7 +66,7 @@ export type TrackState = 'idle' | 'queued' | 'playing' | 'mixing-out' | 'mixing-
 /**
  * Transition modes:
  * - 'mix': 2-bar quantised crossfade with equal-power curve + tempo slide
- * - 'cut': Immediate switch with 50ms micro-fade (non-quantised)
+ * - 'cut': Bar-aligned switch with 1-beat musical fade
  */
 export type TransitionMode = 'mix' | 'cut';
 

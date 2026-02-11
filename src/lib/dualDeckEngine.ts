@@ -13,7 +13,7 @@
  *
  * Transition modes:
  *   - 'mix'  — 2-bar quantised crossfade with equal-power curve + tempo slide
- *   - 'cut'  — Immediate switch with 50ms micro-fade (non-quantised)
+ *   - 'cut'  — Bar-aligned switch with 1-beat musical fade
  */
 
 import type { Track, QueueItem, TransitionMode } from '../types';
@@ -331,37 +331,40 @@ class DualDeckEngine {
     console.log(`[DualDeck] Phase -> mixing, incoming track: ${this.queueManager.getActiveItem()!.track.name}`);
   }
 
-  /** Execute bar-aligned CUT transition with 50ms micro-fade */
+  /** Execute bar-aligned CUT transition with 1-beat musical fade */
   private executeCut(activeDeck: Deck, inactiveDeck: Deck): void {
     const activeItem = this.queueManager.getActiveItem();
     if (!activeItem || !this.audioContext) return;
     
     const incomingNativeBpm = inactiveDeck.getNativeBpm();
     
-    // 50ms micro-fade to avoid click
-    const fadeTime = 0.05;
-    activeDeck.setVolume(0, fadeTime);
+    // 1-beat fade-out on outgoing (musical, not jarring)
+    const bpm = activeDeck.getEffectiveBpm() || 120;
+    const beatDuration = 60 / bpm;
+    activeDeck.setVolume(0, beatDuration);
     
     // CUT mode: native tempo by default, unless Fix Tempo is ON
     if (this.config.fixTempo) {
       const playbackRate = this.targetBpm / incomingNativeBpm;
       inactiveDeck.setPlaybackRate(playbackRate);
-      console.log(`[DualDeck] CUT to: ${activeItem.track.name} (fixed at ${this.targetBpm.toFixed(1)} BPM)`);
+      console.log(`[DualDeck] CUT to: ${activeItem.track.name} (fixed at ${this.targetBpm.toFixed(1)} BPM, fade ${(beatDuration * 1000).toFixed(0)}ms)`);
     } else {
       inactiveDeck.setPlaybackRate(1);
       this.targetBpm = incomingNativeBpm;
-      console.log(`[DualDeck] CUT to: ${activeItem.track.name} (native ${incomingNativeBpm.toFixed(1)} BPM)`);
+      console.log(`[DualDeck] CUT to: ${activeItem.track.name} (native ${incomingNativeBpm.toFixed(1)} BPM, fade ${(beatDuration * 1000).toFixed(0)}ms)`);
     }
     
-    inactiveDeck.setVolume(1);
+    // Incoming: start at zero, ramp to full in 20ms (click-free)
+    inactiveDeck.setVolume(0);
     inactiveDeck.play(0);
+    inactiveDeck.setVolume(1, 0.02);
     inactiveDeck.setState('playing');
     
-    // Stop outgoing after micro-fade
+    // Stop outgoing after the 1-beat fade completes
     setTimeout(() => {
       activeDeck.stop();
       activeDeck.setVolume(1);
-    }, fadeTime * 1000);
+    }, beatDuration * 1000 + 50);
     
     // Swap active deck
     this.activeDeck = this.activeDeck === 'A' ? 'B' : 'A';

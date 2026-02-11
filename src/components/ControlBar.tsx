@@ -343,6 +343,7 @@ export function ControlBar({
             `}
           >
             <SkipBack size={24} />
+            BACK
           </button>
 
           {/* NEXT Button - trigger queued track */}
