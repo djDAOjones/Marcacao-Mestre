@@ -1,0 +1,9 @@
+Apply tempo mapping
+
+Apply multi band compression
+
+Apply auto mastering
+
+Export tempo map as MIDI
+
+Bounce mp3 and wav
