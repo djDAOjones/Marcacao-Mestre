@@ -25,6 +25,8 @@ export class Deck {
   private playbackRate: number = 1.0;
   private volume: number = 1.0;
   private pausedAt: number = 0; // Track position when paused
+  private playStartAudioTime: number = 0;  // AudioContext.currentTime when play started
+  private accumulatedOffset: number = 0;   // Track position accumulated before rate changes
   
   constructor(audioContext: AudioContext, outputNode: AudioNode) {
     this.audioContext = audioContext;
@@ -57,6 +59,10 @@ export class Deck {
       this.shifter.percentagePlayed = startOffset / this.audioBuffer.duration;
     }
     
+    // Manual position tracking (percentagePlayed is unreliable)
+    this.accumulatedOffset = startOffset;
+    this.playStartAudioTime = this.audioContext.currentTime;
+    
     this.state = 'playing';
     
     // Handle end of track
@@ -71,6 +77,8 @@ export class Deck {
       this.shifter = null;
     }
     this.pausedAt = 0;
+    this.accumulatedOffset = 0;
+    this.playStartAudioTime = 0;
     this.state = 'idle';
   }
 
@@ -104,6 +112,12 @@ export class Deck {
   }
 
   setPlaybackRate(rate: number): void {
+    // Accumulate elapsed time at old rate before changing
+    if (this.isPlaying() && this.playStartAudioTime > 0) {
+      const now = this.audioContext.currentTime;
+      this.accumulatedOffset += (now - this.playStartAudioTime) * this.playbackRate;
+      this.playStartAudioTime = now;
+    }
     this.playbackRate = rate;
     if (this.shifter) {
       this.shifter.tempo = rate;
@@ -115,8 +129,12 @@ export class Deck {
   }
 
   getCurrentTime(): number {
-    if (!this.shifter || !this.audioBuffer) return 0;
-    return this.shifter.percentagePlayed * this.audioBuffer.duration;
+    if (!this.audioBuffer) return 0;
+    if (!this.isPlaying() && this.state === 'paused') return this.pausedAt;
+    if (!this.shifter) return 0;
+    // Manual tracking: accumulated offset + elapsed at current rate
+    const elapsed = (this.audioContext.currentTime - this.playStartAudioTime) * this.playbackRate;
+    return Math.min(this.accumulatedOffset + elapsed, this.audioBuffer.duration);
   }
 
   getStatus(): DeckStatus {
@@ -164,8 +182,9 @@ export class Deck {
   }
 
   isFinished(): boolean {
-    if (!this.shifter || !this.audioBuffer) return false;
-    return this.shifter.percentagePlayed >= 1;
+    if (!this.audioBuffer) return false;
+    if (!this.shifter) return false;
+    return this.getCurrentTime() >= this.audioBuffer.duration - 0.05;
   }
 
   setState(state: DeckState): void {
