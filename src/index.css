@@ -10,11 +10,11 @@
   /* ── Light mode (default) ── */
   --cap-bg: 247 247 244;
   --cap-surface: 255 255 255;
-  --cap-panel: 242 239 230;
-  --cap-btn: 228 222 210;
-  --cap-btn-hover: 216 210 195;
-  --cap-border: 195 185 168;
-  --cap-border-sub: 220 215 205;
+  --cap-panel: 235 230 218;
+  --cap-btn: 215 207 190;
+  --cap-btn-hover: 200 192 175;
+  --cap-border: 178 168 148;
+  --cap-border-sub: 208 202 188;
   --cap-text: 17 17 17;
   --cap-text-sec: 55 50 40;
   --cap-muted: 110 95 70;

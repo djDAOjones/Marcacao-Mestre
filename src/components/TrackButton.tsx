@@ -15,7 +15,7 @@ interface TrackButtonProps {
  * Colours chosen from IBM Carbon palette for high-contrast dark theme.
  */
 const stateStyles: Record<TrackState, string> = {
-  idle:        'bg-cap-btn hover:bg-cap-btn-hover border-cap-border text-cap-text',
+  idle:        'bg-cap-btn hover:bg-cap-btn-hover border-cap-border text-cap-text shadow-sm',
   queued:      'bg-cap-gold-vivid hover:bg-cap-gold-vivid/80 border-cap-yellow text-cap-ink animate-pulse',
   playing:     'bg-cap-green-deep-vivid hover:bg-cap-green-vivid border-cap-green text-cap-paper',
   'mixing-out':'bg-cap-green-deep-vivid/60 border-cap-green/60 text-cap-paper/80',
