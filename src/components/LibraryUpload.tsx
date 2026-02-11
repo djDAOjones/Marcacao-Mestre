@@ -144,7 +144,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
               <span className="text-cap-cotton font-medium">
                 Click or drag to upload library.zip
               </span>
-              <span className="text-cap-sand text-sm mt-2">
+              <span className="text-cap-sand text-base mt-2">
                 Contains MP3s, MIDI beat maps, and manifest.json
               </span>
             </>
@@ -163,7 +163,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
           >
             Load Demo Library
           </button>
-          <p className="text-cap-sand text-sm mt-2">
+          <p className="text-cap-sand text-base mt-2">
             Try the app with preloaded sample tracks
           </p>
         </div>
@@ -174,7 +174,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
               <AlertCircle size={18} className="flex-shrink-0 text-cap-red" />
               <span>{error}</span>
             </div>
-            <p className="text-cap-sand text-xs mt-1 ml-[26px]">
+            <p className="text-cap-sand text-sm mt-1 ml-[26px]">
               Try reloading the page, or upload a different ZIP file.
             </p>
           </div>

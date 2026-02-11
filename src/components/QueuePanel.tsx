@@ -132,7 +132,7 @@ export function QueuePanel({
     >
       {/* Header */}
       <div className="px-3 py-2 border-b border-cap-700">
-        <h2 className="text-xs font-semibold text-cap-sand uppercase tracking-wider select-none">
+        <h2 className="text-sm font-semibold text-cap-sand uppercase tracking-wider select-none">
           Queue
         </h2>
       </div>
@@ -140,10 +140,10 @@ export function QueuePanel({
       {/* Queue list */}
       <div className="flex-1 overflow-y-auto" role="list" aria-label="Queued tracks">
         {!hasContent && (
-          <div className="flex flex-col items-center justify-center h-full text-cap-sand text-xs px-4 text-center">
+          <div className="flex flex-col items-center justify-center h-full text-cap-sand text-sm px-4 text-center">
             <Music size={24} className="mb-2 opacity-50" />
             <span>No tracks queued</span>
-            <span className="mt-1 text-[10px]">Click a track to queue it</span>
+            <span className="mt-1 text-xs">Click a track to queue it</span>
           </div>
         )}
 
@@ -190,7 +190,7 @@ export function QueuePanel({
         <div className="border-t border-cap-700">
           <button
             onClick={() => setShowHistory(prev => !prev)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-cap-sand uppercase tracking-wider hover:text-cap-cotton transition-colors select-none"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-cap-sand uppercase tracking-wider hover:text-cap-cotton transition-colors select-none"
             aria-expanded={showHistory}
             aria-controls="play-history-list"
           >
@@ -208,7 +208,7 @@ export function QueuePanel({
               {[...playHistory].reverse().map((entry, i) => (
                 <div
                   key={`${entry.trackId}-${entry.playedAt}`}
-                  className="flex items-center gap-2 px-3 py-1.5 border-b border-cap-800/50 text-[10px]"
+                  className="flex items-center gap-2 px-3 py-1.5 border-b border-cap-800/50 text-xs"
                   role="listitem"
                 >
                   <span className="text-cap-sand tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
@@ -312,16 +312,16 @@ function QueueEntry({
       )}
 
       {/* Position label */}
-      <span className={`text-[10px] font-bold uppercase w-6 flex-shrink-0 ${style.labelColor}`} aria-hidden="true">
+      <span className={`text-xs font-bold uppercase w-6 flex-shrink-0 ${style.labelColor}`} aria-hidden="true">
         {label}
       </span>
 
       {/* Track info */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-cap-white truncate leading-tight">
+        <p className="text-sm font-medium text-cap-white truncate leading-tight">
           {track.name}
         </p>
-        <p className="text-[10px] font-mono tabular-nums text-cap-cotton">
+        <p className="text-xs font-mono tabular-nums text-cap-cotton">
           {bpm} BPM
         </p>
       </div>

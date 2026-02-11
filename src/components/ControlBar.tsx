@@ -138,7 +138,7 @@ export function ControlBar({
   return (
     <nav className="bg-cap-800 border-b border-cap-700" role="toolbar" aria-label="Playback controls">
       {/* Transport Status */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-cap-800 text-sm" role="status" aria-live="polite">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-cap-800 text-base" role="status" aria-live="polite">
         <div className="flex items-center gap-6">
           <div>
             <span className="text-cap-sand mr-2">NOW:</span>
@@ -181,7 +181,7 @@ export function ControlBar({
             title="Click to edit, drag to adjust"
           >
             {Math.round(transportState.currentBpm)} BPM
-            {settings.fixTempo && <span className="text-xs ml-1">🔒</span>}
+            {settings.fixTempo && <span className="text-sm ml-1">🔒</span>}
           </div>
         )}
       </div>
@@ -233,7 +233,7 @@ export function ControlBar({
               >
                 {/* MIX / CUT Toggle */}
                 <div className="px-4 py-3 border-b border-cap-700">
-                  <label className="text-xs font-semibold text-cap-sand uppercase tracking-wider mb-2 block">
+                  <label className="text-sm font-semibold text-cap-sand uppercase tracking-wider mb-2 block">
                     Transition Mode
                   </label>
                   <div className="flex items-center bg-cap-black rounded-lg p-1">
@@ -242,7 +242,7 @@ export function ControlBar({
                       aria-pressed={settings.transitionMode === 'mix'}
                       role="menuitemradio"
                       className={`
-                        flex-1 px-4 py-2 rounded-md text-sm font-bold transition-colors
+                        flex-1 px-4 py-2 rounded-md text-base font-bold transition-colors
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                         ${settings.transitionMode === 'mix' 
                           ? 'bg-cap-blue text-cap-white' 
@@ -256,7 +256,7 @@ export function ControlBar({
                       aria-pressed={settings.transitionMode === 'cut'}
                       role="menuitemradio"
                       className={`
-                        flex-1 px-4 py-2 rounded-md text-sm font-bold transition-colors
+                        flex-1 px-4 py-2 rounded-md text-base font-bold transition-colors
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                         ${settings.transitionMode === 'cut' 
                           ? 'bg-cap-gourd text-cap-white' 
@@ -266,7 +266,7 @@ export function ControlBar({
                       CUT
                     </button>
                   </div>
-                  <p className="text-[10px] text-cap-sand mt-1">
+                  <p className="text-xs text-cap-sand mt-1">
                     {settings.transitionMode === 'mix'
                       ? '2-bar crossfade with tempo slide'
                       : 'Instant switch at next bar'}
@@ -280,7 +280,7 @@ export function ControlBar({
                     aria-pressed={settings.fixTempo}
                     role="menuitemcheckbox"
                     className={`
-                      flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold transition-colors
+                      flex items-center gap-3 w-full px-4 py-2 rounded-lg text-base font-bold transition-colors
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
                       ${settings.fixTempo 
                         ? 'bg-cap-green/20 text-cap-green border border-cap-green-deep' 
@@ -289,11 +289,11 @@ export function ControlBar({
                   >
                     {settings.fixTempo ? <Lock size={18} /> : <Unlock size={18} />}
                     <span>TEMPO LOCK</span>
-                    <span className={`ml-auto text-xs ${settings.fixTempo ? 'text-cap-green' : 'text-cap-sand'}`}>
+                    <span className={`ml-auto text-sm ${settings.fixTempo ? 'text-cap-green' : 'text-cap-sand'}`}>
                       {settings.fixTempo ? 'ON' : 'OFF'}
                     </span>
                   </button>
-                  <p className="text-[10px] text-cap-sand mt-1 px-1">
+                  <p className="text-xs text-cap-sand mt-1 px-1">
                     {settings.fixTempo
                       ? 'Tracks time-stretch to match target BPM'
                       : 'Tracks play at native speed'}
@@ -401,7 +401,7 @@ function ClearQueueButton({ onClearQueue, onClose }: { onClearQueue: () => void;
         onClick={handleClick}
         role="menuitem"
         className={`
-          flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm font-bold
+          flex items-center gap-3 w-full px-4 py-2 rounded-lg text-base font-bold
           transition-colors
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-white
           ${confirming
