@@ -14,12 +14,18 @@ export interface TempoRow {
 }
 
 /**
- * Groups tracks into rows based on native BPM.
- * Each row spans an equal slice of the total BPM range.
- * Empty rows are omitted. Rows are ordered slowest → fastest.
+ * Groups tracks into rows with roughly equal track counts per row.
+ *
+ * Algorithm:
+ *   1. Sort all tracks by native BPM ascending.
+ *   2. Split the sorted list into `rowCount` groups of ⌈N/rowCount⌉ tracks.
+ *   3. Derive each row's BPM label from the actual min/max BPM in that group.
+ *
+ * This ensures consistent button density across rows regardless of the BPM
+ * distribution of the uploaded library.
  *
  * @param tracks   - All tracks in the library
- * @param rowCount - Number of tempo buckets (default 5)
+ * @param rowCount - Number of tempo rows to create (default 5)
  * @returns Array of TempoRow, slowest first
  */
 export function groupTracksByTempo(tracks: Track[], rowCount: number = 5): TempoRow[] {
@@ -27,59 +33,45 @@ export function groupTracksByTempo(tracks: Track[], rowCount: number = 5): Tempo
 
   const count = Math.max(1, Math.round(rowCount));
 
-  // Compute native BPM for each track
-  const withBpm = tracks.map(track => ({
-    track,
-    bpm: getNativeBpm(track.beatMap),
-  }));
-
-  const bpmValues = withBpm.map(t => t.bpm);
-  const minBpm = Math.min(...bpmValues);
-  const maxBpm = Math.max(...bpmValues);
+  // Sort all tracks by native BPM ascending
+  const sorted = tracks
+    .map(track => ({ track, bpm: getNativeBpm(track.beatMap) }))
+    .sort((a, b) => a.bpm - b.bpm);
 
   // Edge case: all tracks have the same BPM → single row
-  if (maxBpm - minBpm < 1) {
+  if (sorted[sorted.length - 1].bpm - sorted[0].bpm < 1) {
     return [{
-      label: `${Math.round(minBpm)} BPM`,
-      minBpm,
-      maxBpm,
-      tracks: withBpm
-        .sort((a, b) => a.track.name.localeCompare(b.track.name))
-        .map(t => t.track),
+      label: `${Math.round(sorted[0].bpm)} BPM`,
+      minBpm: sorted[0].bpm,
+      maxBpm: sorted[sorted.length - 1].bpm,
+      tracks: sorted.map(t => t.track),
     }];
   }
 
-  const range = maxBpm - minBpm;
-  const bucketSize = range / count;
+  // Split into roughly equal-sized groups
+  const rows: TempoRow[] = [];
+  const perRow = Math.ceil(sorted.length / count);
 
-  // Initialise empty buckets
-  const buckets: { minBpm: number; maxBpm: number; tracks: typeof withBpm }[] = [];
   for (let i = 0; i < count; i++) {
-    const lo = minBpm + i * bucketSize;
-    const hi = i === count - 1 ? maxBpm : minBpm + (i + 1) * bucketSize;
-    buckets.push({ minBpm: lo, maxBpm: hi, tracks: [] });
+    const start = i * perRow;
+    const end = Math.min(start + perRow, sorted.length);
+    if (start >= sorted.length) break; // fewer tracks than rows
+
+    const group = sorted.slice(start, end);
+    const minBpm = group[0].bpm;
+    const maxBpm = group[group.length - 1].bpm;
+
+    rows.push({
+      label: Math.round(minBpm) === Math.round(maxBpm)
+        ? `${Math.round(minBpm)} BPM`
+        : `${Math.round(minBpm)}–${Math.round(maxBpm)} BPM`,
+      minBpm,
+      maxBpm,
+      tracks: group.map(t => t.track),
+    });
   }
 
-  // Assign tracks to buckets
-  for (const item of withBpm) {
-    const index = Math.min(
-      Math.floor((item.bpm - minBpm) / bucketSize),
-      count - 1
-    );
-    buckets[index].tracks.push(item);
-  }
-
-  // Convert to TempoRow, omit empty buckets, sort tracks within each row by BPM
-  return buckets
-    .filter(b => b.tracks.length > 0)
-    .map(b => ({
-      label: `${Math.round(b.minBpm)}–${Math.round(b.maxBpm)} BPM`,
-      minBpm: b.minBpm,
-      maxBpm: b.maxBpm,
-      tracks: b.tracks
-        .sort((a, c) => a.bpm - c.bpm)
-        .map(t => t.track),
-    }));
+  return rows;
 }
 
 /**
