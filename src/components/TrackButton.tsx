@@ -5,6 +5,7 @@ import { getTrackBpm } from '../lib/tempoGrouping';
 interface TrackButtonProps {
   track: Track;
   state: TrackState;
+  /** Dynamic button height (px) from liquid grid layout. Falls back to 72px if omitted. */
   height?: number;
   onSingleClick: () => void;
   onDoubleClick: () => void;

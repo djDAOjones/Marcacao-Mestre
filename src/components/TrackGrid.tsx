@@ -3,18 +3,76 @@ import { TrackButton } from './TrackButton';
 import { groupTracksByTempo } from '../lib/tempoGrouping';
 import type { Track, TrackState } from '../types';
 
-/** Layout constants */
-const GRID_PADDING = 12;       // p-3 = 12px top + 12px bottom
-const ROW_GAP = 8;             // gap-2 = 8px between rows
-const ROW_HEADER_HEIGHT = 24;  // text-sm header + mb-1
-const MIN_BUTTON_HEIGHT = 48;  // minimum readable button height
-const MAX_BUTTON_HEIGHT = 100; // don't let buttons get absurdly tall
+// =============================================================================
+// Layout constants (match Tailwind classes used in JSX)
+// =============================================================================
+
+/** Vertical padding inside grid container (p-3 = 12px each side) */
+const GRID_PADDING = 12;
+/** Gap between tempo rows (gap-2 = 8px) */
+const ROW_GAP = 8;
+/** Height consumed by each row's BPM label + margin */
+const ROW_HEADER_HEIGHT = 20;
+/** Minimum readable button height (px) */
+const MIN_BUTTON_HEIGHT = 48;
+/** Maximum button height to prevent oversized buttons on large screens */
+const MAX_BUTTON_HEIGHT = 100;
+/** Minimum tempo rows to display */
 const MIN_ROWS = 2;
+/** Maximum tempo rows to display */
 const MAX_ROWS = 10;
+/** Debounce interval (ms) for ResizeObserver to avoid excessive layout recalcs */
+const RESIZE_DEBOUNCE_MS = 100;
+
+// =============================================================================
+// Pure layout calculation (testable, no React deps)
+// =============================================================================
+
+interface GridLayout {
+  /** Number of tempo rows that fit in the available height */
+  rowCount: number;
+  /** Computed button height (px) to fill available space evenly */
+  buttonHeight: number;
+}
+
+/**
+ * Calculate the optimal number of tempo rows and button height for a given
+ * container height. Rows are fitted top-down at minimum button height, then
+ * the remaining space is distributed evenly across all buttons.
+ *
+ * Formula:
+ *   available = containerHeight - 2 × GRID_PADDING
+ *   Each row consumes: ROW_HEADER_HEIGHT + buttonHeight
+ *   Between rows: ROW_GAP × (rows - 1)
+ *   Solve for max rows at MIN_BUTTON_HEIGHT, then re-derive actual height.
+ *
+ * @param containerHeight - Measured height of the grid container (px)
+ * @returns GridLayout with rowCount and buttonHeight
+ */
+export function calculateGridLayout(containerHeight: number): GridLayout {
+  const available = containerHeight - GRID_PADDING * 2;
+
+  // How many rows fit at the minimum button height?
+  const rowWithMinBtn = ROW_HEADER_HEIGHT + MIN_BUTTON_HEIGHT;
+  const maxFit = Math.floor((available + ROW_GAP) / (rowWithMinBtn + ROW_GAP));
+  const rows = Math.max(MIN_ROWS, Math.min(MAX_ROWS, maxFit));
+
+  // Distribute remaining vertical space evenly across button heights
+  const spaceForButtons = available - rows * ROW_HEADER_HEIGHT - (rows - 1) * ROW_GAP;
+  const buttonHeight = Math.max(
+    MIN_BUTTON_HEIGHT,
+    Math.min(MAX_BUTTON_HEIGHT, Math.floor(spaceForButtons / rows)),
+  );
+
+  return { rowCount: rows, buttonHeight };
+}
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export interface TrackGridProps {
   tracks: Track[];
-  columns: number;
   currentTrackId: string | null;
   queuedTrackId: string | null;
   queuedTrackIds: string[];
@@ -24,6 +82,13 @@ export interface TrackGridProps {
   onTripleClick: (track: Track) => void;
 }
 
+/**
+ * Liquid grid of track buttons grouped into tempo rows.
+ *
+ * The number of rows and button height adapt dynamically to the container's
+ * available height (via ResizeObserver) so that the grid fills the viewport
+ * with no vertical scrolling. Rows scroll horizontally if they overflow.
+ */
 export function TrackGrid({ 
   tracks, 
   currentTrackId, 
@@ -37,51 +102,61 @@ export function TrackGrid({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(600);
 
-  // Measure available height via ResizeObserver
+  // Debounced ResizeObserver — avoids excessive layout recalculations
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
+    let rafId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerHeight(entry.contentRect.height);
-      }
+      // Cancel any pending update
+      if (timeoutId) clearTimeout(timeoutId);
+      if (rafId) cancelAnimationFrame(rafId);
+
+      timeoutId = setTimeout(() => {
+        rafId = requestAnimationFrame(() => {
+          for (const entry of entries) {
+            setContainerHeight(entry.contentRect.height);
+          }
+        });
+      }, RESIZE_DEBOUNCE_MS);
     });
+
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (timeoutId) clearTimeout(timeoutId);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
-  // Calculate how many rows fit and the button height
-  const { rowCount, buttonHeight } = useMemo(() => {
-    const available = containerHeight - GRID_PADDING * 2;
+  // Pure layout calculation (memoised on container height)
+  const { rowCount, buttonHeight } = useMemo(
+    () => calculateGridLayout(containerHeight),
+    [containerHeight],
+  );
 
-    // Calculate how many rows fit with minimum button height
-    // Each row = ROW_HEADER_HEIGHT + buttonHeight + ROW_GAP (except last row, no trailing gap)
-    // N rows: N * (ROW_HEADER_HEIGHT + buttonHeight) + (N-1) * ROW_GAP = available
-    // Solve for N with buttonHeight = MIN_BUTTON_HEIGHT:
-    const rowWithMinBtn = ROW_HEADER_HEIGHT + MIN_BUTTON_HEIGHT;
-    const maxFit = Math.floor((available + ROW_GAP) / (rowWithMinBtn + ROW_GAP));
-    const rows = Math.max(MIN_ROWS, Math.min(MAX_ROWS, maxFit));
+  // Group tracks into the calculated number of tempo rows
+  const tempoRows = useMemo(
+    () => groupTracksByTempo(tracks, rowCount),
+    [tracks, rowCount],
+  );
 
-    // Now calculate actual button height to fill available space
-    const spaceForButtons = available - rows * ROW_HEADER_HEIGHT - (rows - 1) * ROW_GAP;
-    const btnH = Math.max(MIN_BUTTON_HEIGHT, Math.min(MAX_BUTTON_HEIGHT, Math.floor(spaceForButtons / rows)));
+  // O(1) lookup set for queued track IDs (avoids O(n) .includes() per button)
+  const queuedIdSet = useMemo(() => new Set(queuedTrackIds), [queuedTrackIds]);
 
-    return { rowCount: rows, buttonHeight: btnH };
-  }, [containerHeight]);
-
-  // Group tracks into the calculated number of rows
-  const tempoRows = useMemo(() => groupTracksByTempo(tracks, rowCount), [tracks, rowCount]);
-
+  /** Derive visual state for a single track button */
   const getTrackState = useCallback((track: Track): TrackState => {
     if (track.id === currentTrackId && mixProgress > 0) return 'mixing-out';
     if (track.id === currentTrackId) return 'playing';
     if (track.id === queuedTrackId && mixProgress > 0) return 'mixing-in';
     if (track.id === queuedTrackId) return 'queued';
-    if (queuedTrackIds.includes(track.id)) return 'queued';
+    if (queuedIdSet.has(track.id)) return 'queued';
     if (!track.beatMap) return 'disabled';
     return 'idle';
-  }, [currentTrackId, queuedTrackId, queuedTrackIds, mixProgress]);
+  }, [currentTrackId, queuedTrackId, queuedIdSet, mixProgress]);
 
   return (
     <div

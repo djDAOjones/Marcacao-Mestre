@@ -240,7 +240,6 @@ function App() {
         <main className="flex-1 overflow-hidden">
           <TrackGrid
             tracks={tracks}
-            columns={library.gridColumns}
             currentTrackId={transportState.currentTrack?.id ?? null}
             queuedTrackId={transportState.nextTrack?.id ?? null}
             queuedTrackIds={queuedTrackIds}
