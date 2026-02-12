@@ -1,9 +1,6 @@
 import type { Track } from '../types';
 import { getNativeBpm } from './beatScheduler';
 
-/** Number of tempo-based row groups (quintiles = 5) */
-const QUINTILE_COUNT = 5;
-
 /** A row of tracks grouped by a BPM range */
 export interface TempoRow {
   /** Human-readable label, e.g. "80–96 BPM" */
@@ -17,15 +14,18 @@ export interface TempoRow {
 }
 
 /**
- * Groups tracks into quintile rows based on native BPM.
- * Each row spans 20% of the total BPM range.
+ * Groups tracks into rows based on native BPM.
+ * Each row spans an equal slice of the total BPM range.
  * Empty rows are omitted. Rows are ordered slowest → fastest.
  *
- * @param tracks - All tracks in the library
+ * @param tracks   - All tracks in the library
+ * @param rowCount - Number of tempo buckets (default 5)
  * @returns Array of TempoRow, slowest first
  */
-export function groupTracksByTempo(tracks: Track[]): TempoRow[] {
+export function groupTracksByTempo(tracks: Track[], rowCount: number = 5): TempoRow[] {
   if (tracks.length === 0) return [];
+
+  const count = Math.max(1, Math.round(rowCount));
 
   // Compute native BPM for each track
   const withBpm = tracks.map(track => ({
@@ -50,13 +50,13 @@ export function groupTracksByTempo(tracks: Track[]): TempoRow[] {
   }
 
   const range = maxBpm - minBpm;
-  const bucketSize = range / QUINTILE_COUNT;
+  const bucketSize = range / count;
 
   // Initialise empty buckets
   const buckets: { minBpm: number; maxBpm: number; tracks: typeof withBpm }[] = [];
-  for (let i = 0; i < QUINTILE_COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const lo = minBpm + i * bucketSize;
-    const hi = i === QUINTILE_COUNT - 1 ? maxBpm : minBpm + (i + 1) * bucketSize;
+    const hi = i === count - 1 ? maxBpm : minBpm + (i + 1) * bucketSize;
     buckets.push({ minBpm: lo, maxBpm: hi, tracks: [] });
   }
 
@@ -64,7 +64,7 @@ export function groupTracksByTempo(tracks: Track[]): TempoRow[] {
   for (const item of withBpm) {
     const index = Math.min(
       Math.floor((item.bpm - minBpm) / bucketSize),
-      QUINTILE_COUNT - 1
+      count - 1
     );
     buckets[index].tracks.push(item);
   }

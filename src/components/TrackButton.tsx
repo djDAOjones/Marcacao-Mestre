@@ -5,6 +5,7 @@ import { getTrackBpm } from '../lib/tempoGrouping';
 interface TrackButtonProps {
   track: Track;
   state: TrackState;
+  height?: number;
   onSingleClick: () => void;
   onDoubleClick: () => void;
   onTripleClick: () => void;
@@ -32,7 +33,7 @@ const stateAriaLabels: Record<TrackState, string> = {
   disabled:    '(unavailable)',
 };
 
-export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTripleClick }: TrackButtonProps) {
+export function TrackButton({ track, state, height, onSingleClick, onDoubleClick, onTripleClick }: TrackButtonProps) {
   const handleClick = useMultiClick({
     delay: 300,
     onSingleClick,
@@ -50,8 +51,9 @@ export function TrackButton({ track, state, onSingleClick, onDoubleClick, onTrip
       aria-label={ariaLabel}
       aria-pressed={state === 'playing' || state === 'queued'}
       title="Click: queue · Double-click: play next · Triple-click: mix now"
+      style={height ? { height: `${height}px` } : undefined}
       className={`
-        w-[140px] h-[72px]
+        w-[140px] ${height ? '' : 'h-[72px]'}
         flex flex-col items-center justify-center gap-0.5
         text-center text-sm font-medium
         rounded-lg border-2

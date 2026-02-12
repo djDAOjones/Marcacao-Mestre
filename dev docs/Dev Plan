@@ -83,6 +83,11 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Distribute tracks into rows by average tempo (slowest first, fastest last)
   - [x] Dynamically allocate into quintiles (lowest 20% of tempo range, then next 20%, etc.)
   - [x] Rows scroll horizontally once they exceed page width
+- [ ] **Liquid grid layout (no-scroll):**
+  - [ ] Number of tempo rows adapts to available screen height (no vertical scrolling)
+  - [ ] Tracks distributed evenly across however many rows fit
+  - [ ] Row height and button size scale to fill viewport
+  - [ ] Works across iPad (1024×768) to desktop (2560×1440) without scrolling
 - [x] **Queue playback behaviour:**
   - [x] Songs in queue play out fully; last 2 bars of outgoing overlap with first 2 bars of incoming (2-bar mix)
   - [x] Single click: add track to end of queue
@@ -123,6 +128,26 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Contains: MIX/CUT toggle, Tempo Lock toggle, Clear Queue action
   - [x] Click-outside and Escape to close; proper ARIA roles
   - [x] Main bar decluttered: only Duck + transport controls visible
+- [x] **Light/dark mode theming:**
+  - [x] CSS custom properties for light and dark themes
+  - [x] useTheme hook with localStorage persistence
+  - [x] Toggle in settings dropdown (Sun/Moon icons)
+  - [x] Default to light mode; WCAG AAA contrast verified
+- [x] **CUT transition smoothness:**
+  - [x] Replaced 50ms micro-fade with 1-beat musical fade-out
+  - [x] Incoming track ramps in over 20ms (click-free)
+  - [x] Brief 1-beat overlap — still a "cut", not a crossfade
+- [x] **Duck → TALK rename:**
+  - [x] Renamed to TALK (clearer for session leaders speaking over music)
+  - [x] Moved to transport group (left of BACK)
+  - [x] Icon: Mic when off, VolumeX when active
+- [x] **Mix duration setting (Notes #12 partial):**
+  - [x] 1 / 2 / 4 bar toggle in settings dropdown (default: 2)
+  - [x] Controls crossfade length for MIX transitions and auto-advance scheduling
+- [x] **Tempo lock fixes:**
+  - [x] playTrackImmediately respects fixTempo on first play
+  - [x] MIX transition: no tempo slide when locked — both decks at locked rate
+  - [x] completeMix preserves locked BPM instead of resetting to native
 
 **Deliverable:** Simplified controls matching spec v4.
 
@@ -138,6 +163,21 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Graceful degradation beyond those bounds
 - [ ] Tablet layout testing
 - [ ] Error handling + validation feedback
+- [ ] **Lazy Decode + Eviction Cache (Notes #12):**
+  - [ ] Store MP3 blobs in Cache API (disk) instead of decoding all at ZIP load
+  - [ ] Decode on demand when track is queued (1-2s lead time)
+  - [ ] Keep max 3 AudioBuffers in memory (playing + next + preload)
+  - [ ] Evict old buffers after deck swap — enables 150 MB+ libraries on iPad 5
+- [ ] **Help / onboarding (Notes #2):**
+  - [ ] Instructions on splash screen explaining workflow
+  - [ ] Help button in app to explain controls and interactions
+- [ ] **Queue-end behaviour setting (Notes #4):**
+  - [ ] Setting for what happens when queue empties: stop / random / tempo-ascending / tempo-descending
+  - [ ] Currently defaults to auto-advance (next in library)
+- [ ] **Double-click queue item to delete (Notes #5):**
+  - [ ] Quick-delete interaction for queue entries (currently tap-to-remove)
+- [ ] **Default stopped state (Notes #10):**
+  - [ ] Verify app starts stopped, waiting for track selection + play
 - [x] **Persist queue & play history (#7):**
   - [x] Save queue + history to localStorage (debounced, scoped per library)
   - [x] Restore queue on library load; re-queue saved items into engine
@@ -177,8 +217,38 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Collapsible history section in QueuePanel (most recent first)
   - [x] Shows track name + timestamp for each play
   - [ ] Navigate back to a previously played track (future enhancement)
+- [ ] **Click history items to queue (Notes #6):**
+  - [ ] Tap a history entry to re-add that track to the queue
+- [ ] **Transport scrub bar (Notes #1):**
+  - [ ] Draggable playhead bar at bottom of screen for repositioning
+- [ ] **MP3 upload without beatmaps (Notes #7):**
+  - [ ] Fallback mode: accept raw MP3s without beat maps
+  - [ ] Use filename or metadata for tempo estimation
+  - [ ] Basic tempo sorting on UI; no beat-matched mixing
+- [ ] **Silence detection (Notes #9, #11):**
+  - [ ] Scan first bar / 2 seconds of audio for silence
+  - [ ] Subtle indicator on track button for tracks with silent intros
+  - [ ] Optionally skip silence — locate where music starts and mix from next bar
+- [ ] **Beatmap creation guide (Notes #8):**
+  - [ ] Documentation: how to create beat maps with Logic Pro
+  - [ ] Principles for other DAWs (Ableton, Reaper, etc.)
 
 ---
 
 ## Current Status
-**Phase 5 substantially complete. Remaining: service worker, install prompt, tablet testing.**
+**Phase 4 complete. Phase 5 in progress — remaining: service worker, install prompt, lazy decode cache, help/onboarding, queue-end settings, tablet testing.**
+
+## Notes Integration
+All 12 items from `Notes for incorperation.md` have been incorporated:
+- #1 → Phase 6 (Transport scrub bar)
+- #2 → Phase 5 (Help / onboarding)
+- #3 → Phase 5 (Queue-end behaviour — documents auto-advance basis)
+- #4 → Phase 5 (Queue-end behaviour setting)
+- #5 → Phase 5 (Double-click queue delete)
+- #6 → Phase 6 (Click history to queue)
+- #7 → Phase 6 (MP3 without beatmaps)
+- #8 → Phase 6 (Beatmap creation guide)
+- #9 → Phase 6 (Silence detection)
+- #10 → Phase 5 (Default stopped state)
+- #11 → Phase 6 (Silence-aware mixing)
+- #12 → Phase 5 (Lazy Decode + Eviction Cache)

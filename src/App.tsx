@@ -237,7 +237,7 @@ function App() {
         onClearQueue={handleClearQueue}
       />
       <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-hidden">
           <TrackGrid
             tracks={tracks}
             columns={library.gridColumns}
