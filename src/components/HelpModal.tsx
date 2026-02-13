@@ -31,6 +31,7 @@ const HELP_SECTIONS = [
   {
     title: 'Transport Controls',
     items: [
+      'BPM — click to type a target BPM, drag up/down to adjust',
       'TALK — duck music volume for speaking',
       'BACK — restart current track from beginning',
       'NEXT — skip to the next queued track',

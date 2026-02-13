@@ -262,19 +262,27 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 ---
 
 ## Current Status
-**Phase 5 complete (except manual tablet testing). Lazy Decode cache implemented. Phase 6 items are future v2+ work.**
+**Working on Notes v2 #3: remove status bar, merge BPM into single-row ControlBar for 1024×768 fit.**
 
-## Notes Integration
-All 12 items from `Notes for incorperation.md` have been incorporated:
+## Notes Integration (original #1-#12)
+All 12 items from original `Notes for incorperation.md` have been incorporated:
 - #1 → Phase 6 (Transport scrub bar)
-- #2 → Phase 5 (Help / onboarding)
-- #3 → Phase 5 (Queue-end behaviour — documents auto-advance basis)
-- #4 → Phase 5 (Queue-end behaviour setting)
-- #5 → Phase 5 (Double-click queue delete)
-- #6 → Phase 6 (Click history to queue)
+- #2 → Phase 5 (Help / onboarding) ✅
+- #3 → Phase 5 (Queue-end behaviour — documents auto-advance basis) ✅
+- #4 → Phase 5 (Queue-end behaviour setting) ✅
+- #5 → Phase 5 (Double-click queue delete) ✅
+- #6 → Phase 5 (Click history to queue) ✅
 - #7 → Phase 6 (MP3 without beatmaps)
 - #8 → Phase 6 (Beatmap creation guide)
 - #9 → Phase 6 (Silence detection)
-- #10 → Phase 5 (Default stopped state)
+- #10 → Phase 5 (Default stopped state) ✅
 - #11 → Phase 6 (Silence-aware mixing)
-- #12 → Phase 5 (Lazy Decode + Eviction Cache)
+- #12 → Phase 5 (Lazy Decode + Eviction Cache) ✅
+
+## Notes v2 Integration (#1-#6)
+- v2 #1 → Phase 6 (Horizontal scrolling for whole board, not per row)
+- v2 #2 → Phase 6 (Full IBM Carbon / WCAG AAA / Nielsen 10 audit from screenshots)
+- v2 #3 → **IN PROGRESS** (Remove status bar, merge BPM into ControlBar — single row saves ~56px)
+- v2 #4 → Persistent spec (maintain efficient, documented, modular IBM Carbon / WCAG AAA / Nielsen 10 approach)
+- v2 #5 → Phase 6 (Refactor for modularity + old tablet efficiency)
+- v2 #6 → **IN PROGRESS** (Min res 1024×768, max 2560×1440, warning popup when too low)

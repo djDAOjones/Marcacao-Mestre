@@ -19,19 +19,18 @@ export interface ControlBarProps {
 }
 
 /**
- * ControlBar — Main playback control strip.
+ * ControlBar — Single-row playback control strip.
  *
  * Layout (left → right):
- *   Status bar:  NOW | NEXT | STATUS | BPM
- *   Controls:    [Duck] [Settings ▾]  ...spacer...  [⏮] [⏭ NEXT] [⏯ PLAY/PAUSE]
+ *   Left:   [Settings ▾] [BPM] [TALK]
+ *   Right:  [⏮ BACK] [⏭ NEXT] [⏯ PLAY/PAUSE]
  *
- * The Settings dropdown contains less-used controls:
- *   - MIX / CUT transition toggle
- *   - Tempo Lock toggle
- *   - Clear Queue action
+ * Status info (NOW/NEXT/STATUS) removed — redundant with QueuePanel
+ * and track grid highlights (Nielsen #8: minimalist design).
+ * BPM is interactive: click to type, drag to adjust.
  *
- * Design: IBM Carbon button sizes (56px min-height), WCAG AAA focus rings,
- *         Nielsen #8 (minimalist), #6 (recognition > recall).
+ * Design: IBM Carbon 48px min touch targets, WCAG AAA focus rings,
+ *         single row saves ~56px vs two-row layout (fits 1024×768).
  */
 export function ControlBar({
   transportState,
@@ -114,83 +113,14 @@ export function ControlBar({
     document.addEventListener('mouseup', handleMouseUp);
   }, [isEditingBpm, settings.targetBpm, transportState.currentBpm, onSettingsChange]);
 
-  const getStatusText = () => {
-    switch (transportState.phase) {
-      case 'idle': return 'STOPPED';
-      case 'playing': return transportState.isPaused ? 'PAUSED' : 'PLAYING';
-      case 'queued': return 'QUEUED';
-      case 'mixing': 
-        const progress = Math.round(transportState.mixProgress * 100);
-        return `MIXING ${progress}%`;
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (transportState.phase) {
-      case 'idle': return 'text-cap-muted';
-      case 'playing': return transportState.isPaused ? 'text-cap-yellow' : 'text-cap-green';
-      case 'queued': return 'text-cap-gold';
-      case 'mixing': return 'text-cap-flag';
-    }
-  };
-
   const { theme, toggleTheme } = useTheme();
   const hasQueuedTrack = transportState.nextTrack !== null || transportState.phase === 'queued';
 
   return (
     <nav className="bg-cap-panel border-b border-cap-border" role="toolbar" aria-label="Playback controls">
-      {/* Transport Status */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-cap-border-sub text-base" role="status" aria-live="polite">
-        <div className="flex items-center gap-6">
-          <div>
-            <span className="text-cap-muted mr-2">NOW:</span>
-            <span className="font-medium">{transportState.currentTrack?.name ?? '—'}</span>
-          </div>
-          <div>
-            <span className="text-cap-muted mr-2">NEXT:</span>
-            <span className="font-medium text-cap-yellow">{transportState.nextTrack?.name ?? '—'}</span>
-          </div>
-          <div>
-            <span className="text-cap-muted mr-2">STATUS:</span>
-            <span className={getStatusColor()}>
-              {getStatusText()}
-            </span>
-          </div>
-        </div>
-        {/* Interactive BPM Display */}
-        {isEditingBpm ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="60"
-              max="200"
-              value={editBpmValue}
-              onChange={(e) => setEditBpmValue(e.target.value)}
-              onKeyDown={handleBpmKeyDown}
-              onBlur={handleBpmSubmit}
-              autoFocus
-              className="w-20 px-2 py-1 text-xl font-mono font-bold text-cap-yellow 
-                         bg-cap-surface border border-cap-yellow rounded text-center"
-            />
-            <span className="text-xl font-mono font-bold text-cap-yellow">BPM</span>
-          </div>
-        ) : (
-          <div
-            onClick={handleBpmClick}
-            onMouseDown={handleBpmDragStart}
-            className={`text-xl font-mono font-bold cursor-ns-resize select-none
-                       ${settings.fixTempo ? 'text-cap-green' : 'text-cap-yellow'}`}
-            title="Click to edit, drag to adjust"
-          >
-            {Math.round(transportState.currentBpm)} BPM
-            {settings.fixTempo && <span className="text-sm ml-1">🔒</span>}
-          </div>
-        )}
-      </div>
-
-      {/* Controls - Large buttons for tablet tapping */}
-      <div className="flex items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-4">
+      {/* Single-row controls — status info removed (redundant with QueuePanel + grid highlights) */}
+      <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center gap-3">
           {/* Settings Dropdown — contains MIX/CUT, Tempo Lock, Mix Duration, Clear Queue */}
           <div className="relative" ref={settingsRef}>
             <button
@@ -199,7 +129,7 @@ export function ControlBar({
               aria-haspopup="menu"
               aria-label="Settings menu"
               className={`
-                flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+                flex items-center gap-2 px-4 py-2 rounded-xl text-lg font-bold transition-colors min-h-[48px]
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
                 ${isSettingsOpen
                   ? 'bg-cap-btn-hover text-cap-text'
@@ -366,34 +296,71 @@ export function ControlBar({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Transport Buttons */}
-        <div className="flex items-center gap-3">
+          {/* Interactive BPM Button — click to type, drag to adjust */}
+          {isEditingBpm ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min="60"
+                max="200"
+                value={editBpmValue}
+                onChange={(e) => setEditBpmValue(e.target.value)}
+                onKeyDown={handleBpmKeyDown}
+                onBlur={handleBpmSubmit}
+                autoFocus
+                className="w-16 px-2 py-1 text-lg font-mono font-bold text-cap-yellow
+                           bg-cap-surface border border-cap-yellow rounded text-center"
+              />
+              <span className="text-sm font-bold text-cap-yellow">BPM</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleBpmClick}
+              onMouseDown={handleBpmDragStart}
+              aria-label={`Current BPM: ${Math.round(transportState.currentBpm)}. Click to edit, drag to adjust.`}
+              className={`
+                flex items-center gap-1.5 px-4 py-2 rounded-xl font-mono font-bold transition-colors min-h-[48px]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
+                cursor-ns-resize select-none
+                ${settings.fixTempo
+                  ? 'bg-cap-green-vivid/20 text-cap-green border border-cap-green-deep'
+                  : 'bg-cap-btn text-cap-yellow hover:bg-cap-btn-hover'}
+              `}
+            >
+              {settings.fixTempo && <Lock size={16} />}
+              <span className="text-lg">{Math.round(transportState.currentBpm)}</span>
+              <span className="text-xs uppercase">BPM</span>
+            </button>
+          )}
+
           {/* TALK Toggle — duck music for session leader to speak */}
           <button
             onClick={() => onSettingsChange({ duckOn: !settings.duckOn })}
             aria-pressed={settings.duckOn}
             aria-label={settings.duckOn ? 'Talk mode on – music ducked' : 'Talk mode off – full volume'}
             className={`
-              flex items-center gap-2 px-6 py-3 rounded-xl text-lg font-bold transition-colors min-h-[56px]
+              flex items-center gap-2 px-4 py-2 rounded-xl text-lg font-bold transition-colors min-h-[48px]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
-              ${settings.duckOn 
-                ? 'bg-cap-gold-vivid text-cap-ink' 
-                : 'bg-cap-btn text-cap-text-sec'}
+              ${settings.duckOn
+                ? 'bg-cap-gold-vivid text-cap-ink'
+                : 'bg-cap-btn text-cap-text-sec hover:bg-cap-btn-hover'}
             `}
           >
-            {settings.duckOn ? <VolumeX size={24} /> : <Mic size={24} />}
-            TALK
+            {settings.duckOn ? <VolumeX size={20} /> : <Mic size={20} />}
+            <span className="hidden sm:inline">TALK</span>
           </button>
+        </div>
 
+        {/* Transport Buttons */}
+        <div className="flex items-center gap-2">
           {/* BACK Button - restart current track */}
           <button
             onClick={onRewind}
             disabled={transportState.phase === 'idle'}
             aria-label="Rewind to start of current track"
             className={`
-              flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
+              flex items-center gap-2 px-4 py-2 text-lg font-bold rounded-xl transition-colors min-h-[48px]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
               ${transportState.phase === 'idle'
                 ? 'bg-cap-btn text-cap-disabled cursor-not-allowed'
@@ -401,8 +368,8 @@ export function ControlBar({
               }
             `}
           >
-            <SkipBack size={24} />
-            BACK
+            <SkipBack size={20} />
+            <span className="hidden sm:inline">BACK</span>
           </button>
 
           {/* NEXT Button - trigger queued track */}
@@ -411,7 +378,7 @@ export function ControlBar({
             disabled={!hasQueuedTrack || transportState.phase === 'mixing'}
             aria-label="Skip to next queued track"
             className={`
-              flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
+              flex items-center gap-2 px-4 py-2 text-lg font-bold rounded-xl transition-colors min-h-[48px]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
               ${!hasQueuedTrack || transportState.phase === 'mixing'
                 ? 'bg-cap-btn text-cap-disabled cursor-not-allowed'
@@ -419,7 +386,7 @@ export function ControlBar({
               }
             `}
           >
-            <SkipForward size={24} />
+            <SkipForward size={20} />
             NEXT
           </button>
 
@@ -429,7 +396,7 @@ export function ControlBar({
             disabled={transportState.phase === 'idle'}
             aria-label={transportState.isPaused ? 'Resume playback' : 'Pause playback'}
             className={`
-              flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-xl transition-colors min-h-[56px]
+              flex items-center gap-2 px-5 py-2 text-lg font-bold rounded-xl transition-colors min-h-[48px]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
               ${transportState.phase === 'idle'
                 ? 'bg-cap-btn text-cap-disabled cursor-not-allowed'
@@ -439,7 +406,7 @@ export function ControlBar({
               }
             `}
           >
-            {transportState.isPaused ? <Play size={24} /> : <Pause size={24} />}
+            {transportState.isPaused ? <Play size={20} /> : <Pause size={20} />}
             {transportState.isPaused ? 'PLAY' : 'PAUSE'}
           </button>
         </div>

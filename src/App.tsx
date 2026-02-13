@@ -5,6 +5,7 @@ import { QueuePanel } from './components/QueuePanel';
 import { LibraryUpload } from './components/LibraryUpload';
 import { HelpModal, useFirstVisitHelp } from './components/HelpModal';
 import { ToastContainer, useToast } from './components/Toast';
+import { ResolutionWarning } from './components/ResolutionWarning';
 import { dualDeckEngine, type TransportState } from './lib/dualDeckEngine';
 import {
   saveSession,
@@ -283,6 +284,7 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
+      <ResolutionWarning />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <HelpModal isOpen={isHelpOpen} onClose={handleCloseHelp} />
       <div className="fixed bottom-2 right-2 flex items-center gap-2 z-50">
