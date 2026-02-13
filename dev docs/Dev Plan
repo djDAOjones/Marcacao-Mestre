@@ -165,7 +165,12 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] apple-mobile-web-app-capable meta tags for iOS
   - [x] SVG app icon with capoeira branding
   - [x] Standalone display, landscape orientation preferred
-- [ ] Touch optimisation + large hit targets
+- [x] **Touch optimisation + large hit targets:**
+  - [x] Global touch-action: manipulation (prevents double-tap zoom on iPad)
+  - [x] All interactive elements ≥44px touch target (Carbon compliance)
+  - [x] -webkit-tap-highlight-color: transparent globally
+  - [x] Queue remove button enlarged from 22px to 44px
+  - [x] Toast dismiss button enlarged from 32px to 44px
 - [x] **Responsive layout (1024×768 → 2560×1440):**
   - [x] Min resolution: 1024 (w) × 768 (h)
   - [x] Max resolution: 2560 (w) × 1440 (h)
