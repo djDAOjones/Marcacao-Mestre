@@ -288,6 +288,7 @@ function QueueEntry({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
+      onDoubleClick={onRemove}
       className={`
         flex items-center gap-1.5 px-2 py-2.5
         border-l-4 ${style.border} ${style.bg}

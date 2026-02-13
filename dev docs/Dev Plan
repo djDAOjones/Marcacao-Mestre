@@ -83,11 +83,11 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Distribute tracks into rows by average tempo (slowest first, fastest last)
   - [x] Dynamically allocate into quintiles (lowest 20% of tempo range, then next 20%, etc.)
   - [x] Rows scroll horizontally once they exceed page width
-- [ ] **Liquid grid layout (no-scroll):**
-  - [ ] Number of tempo rows adapts to available screen height (no vertical scrolling)
-  - [ ] Tracks distributed evenly across however many rows fit
-  - [ ] Row height and button size scale to fill viewport
-  - [ ] Works across iPad (1024×768) to desktop (2560×1440) without scrolling
+- [x] **Liquid grid layout (no-scroll):**
+  - [x] Number of tempo rows adapts to available screen height (no vertical scrolling)
+  - [x] Tracks distributed evenly across however many rows fit
+  - [x] Row height and button size scale to fill viewport
+  - [x] Works across iPad (1024×768) to desktop (2560×1440) without scrolling
 - [x] **Queue playback behaviour:**
   - [x] Songs in queue play out fully; last 2 bars of outgoing overlap with first 2 bars of incoming (2-bar mix)
   - [x] Single click: add track to end of queue
@@ -171,13 +171,13 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [ ] **Help / onboarding (Notes #2):**
   - [ ] Instructions on splash screen explaining workflow
   - [ ] Help button in app to explain controls and interactions
-- [ ] **Queue-end behaviour setting (Notes #4):**
-  - [ ] Setting for what happens when queue empties: stop / random / tempo-ascending / tempo-descending
-  - [ ] Currently defaults to auto-advance (next in library)
-- [ ] **Double-click queue item to delete (Notes #5):**
-  - [ ] Quick-delete interaction for queue entries (currently tap-to-remove)
-- [ ] **Default stopped state (Notes #10):**
-  - [ ] Verify app starts stopped, waiting for track selection + play
+- [x] **Queue-end behaviour setting (Notes #4):**
+  - [x] Setting for what happens when queue empties: stop / random / tempo-ascending / tempo-descending
+  - [x] Default: next in library order. UI: 5-button toggle in settings dropdown
+- [x] **Double-click queue item to delete (Notes #5):**
+  - [x] Double-click on queued item triggers animated remove (same as X button)
+- [x] **Default stopped state (Notes #10):**
+  - [x] Verified: engine starts phase='idle', no auto-play, waits for user click
 - [x] **Persist queue & play history (#7):**
   - [x] Save queue + history to localStorage (debounced, scoped per library)
   - [x] Restore queue on library load; re-queue saved items into engine

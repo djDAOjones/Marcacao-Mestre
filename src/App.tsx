@@ -10,7 +10,8 @@ import {
   appendHistory,
   type HistoryEntry,
 } from './lib/sessionPersistence';
-import type { Library, Track, AppSettings } from './types';
+import type { Library, Track, AppSettings, AutoAdvanceMode } from './types';
+import { getNativeBpm } from './lib/beatScheduler';
 
 const DEFAULT_SETTINGS: AppSettings = {
   transitionMode: 'mix',
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   mixBars: 2,
   duckOn: false,
   duckLevel: 0.18,
+  autoAdvanceMode: 'next',
 };
 
 function App() {
@@ -39,9 +41,11 @@ function App() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [playHistory, setPlayHistory] = useState<HistoryEntry[]>([]);
 
-  // Ref to tracks so the auto-advance callback always has the latest list
+  // Refs so the auto-advance callback always has the latest values
   const tracksRef = useRef<Track[]>([]);
   tracksRef.current = tracks;
+  const settingsRef = useRef<AppSettings>(settings);
+  settingsRef.current = settings;
 
   // Track the last-known current track ID to detect track changes for history
   const lastCurrentTrackIdRef = useRef<string | null>(null);
@@ -79,22 +83,60 @@ function App() {
     dualDeckEngine.setTargetBpm(settings.targetBpm);
   }, [settings.targetBpm]);
 
-  // Auto-advance: when queue empties while playing, add next library track
+  // Auto-advance: when queue empties while playing, pick next track per mode
   useEffect(() => {
     dualDeckEngine.setOnTrackEnded(() => {
       const allTracks = tracksRef.current;
-      if (allTracks.length === 0) return;
+      const mode: AutoAdvanceMode = settingsRef.current.autoAdvanceMode;
+      if (allTracks.length === 0 || mode === 'stop') return;
 
       const currentTrack = dualDeckEngine.getCurrentTrack();
       const currentIndex = currentTrack
         ? allTracks.findIndex(t => t.id === currentTrack.id)
         : -1;
 
-      // Pick the next track in library order, wrapping to the start
-      const nextIndex = (currentIndex + 1) % allTracks.length;
-      const nextTrack = allTracks[nextIndex];
+      let nextTrack: Track | undefined;
+
+      switch (mode) {
+        case 'random': {
+          // Pick a random track that isn't the current one
+          const candidates = allTracks.filter(t => t.id !== currentTrack?.id);
+          nextTrack = candidates.length > 0
+            ? candidates[Math.floor(Math.random() * candidates.length)]
+            : allTracks[0];
+          break;
+        }
+        case 'tempo-asc': {
+          // Sort by BPM ascending, pick next one above current
+          const sorted = [...allTracks].sort(
+            (a, b) => getNativeBpm(a.beatMap) - getNativeBpm(b.beatMap),
+          );
+          const curBpm = currentTrack ? getNativeBpm(currentTrack.beatMap) : 0;
+          nextTrack = sorted.find(t => getNativeBpm(t.beatMap) > curBpm && t.id !== currentTrack?.id)
+            ?? sorted[0]; // wrap to slowest
+          break;
+        }
+        case 'tempo-desc': {
+          // Sort by BPM descending, pick next one below current
+          const sorted = [...allTracks].sort(
+            (a, b) => getNativeBpm(b.beatMap) - getNativeBpm(a.beatMap),
+          );
+          const curBpm = currentTrack ? getNativeBpm(currentTrack.beatMap) : Infinity;
+          nextTrack = sorted.find(t => getNativeBpm(t.beatMap) < curBpm && t.id !== currentTrack?.id)
+            ?? sorted[0]; // wrap to fastest
+          break;
+        }
+        case 'next':
+        default: {
+          // Next in library order, wrapping
+          const nextIndex = (currentIndex + 1) % allTracks.length;
+          nextTrack = allTracks[nextIndex];
+          break;
+        }
+      }
+
       if (nextTrack) {
-        console.log(`[App] Auto-advance: queuing "${nextTrack.name}"`);
+        console.log(`[App] Auto-advance (${mode}): queuing "${nextTrack.name}"`);
         dualDeckEngine.addToQueue(nextTrack, 'end');
       }
     });

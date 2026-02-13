@@ -90,6 +90,16 @@ export interface QueueItem {
 // App Settings
 // =============================================================================
 
+/**
+ * What happens when the queue empties during playback.
+ * - 'next'       — play the next track in library order (default)
+ * - 'random'     — pick a random track from the library
+ * - 'tempo-asc'  — pick the next track sorted by ascending BPM
+ * - 'tempo-desc' — pick the next track sorted by descending BPM
+ * - 'stop'       — stop playback when queue runs out
+ */
+export type AutoAdvanceMode = 'next' | 'random' | 'tempo-asc' | 'tempo-desc' | 'stop';
+
 /** Persistent app-level settings (controls in ControlBar) */
 export interface AppSettings {
   transitionMode: TransitionMode;
@@ -98,4 +108,6 @@ export interface AppSettings {
   mixBars: 1 | 2 | 4;
   duckOn: boolean;
   duckLevel: number;
+  /** Behaviour when queue empties during playback */
+  autoAdvanceMode: AutoAdvanceMode;
 }

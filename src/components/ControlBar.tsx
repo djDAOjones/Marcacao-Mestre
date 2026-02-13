@@ -5,7 +5,7 @@ import {
   Settings, Trash2, Sun, Moon, Mic,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
-import type { AppSettings } from '../types';
+import type { AppSettings, AutoAdvanceMode } from '../types';
 import type { TransportState } from '../lib/dualDeckEngine';
 
 export interface ControlBarProps {
@@ -311,6 +311,41 @@ export function ControlBar({
                   </div>
                   <p className="text-xs text-cap-muted mt-1">
                     Crossfade length for MIX transitions
+                  </p>
+                </div>
+
+                {/* Auto-Advance Mode */}
+                <div className="px-4 py-3 border-b border-cap-border">
+                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
+                    When Queue Ends
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { value: 'next', label: 'NEXT' },
+                      { value: 'random', label: 'RANDOM' },
+                      { value: 'tempo-asc', label: 'BPM ↑' },
+                      { value: 'tempo-desc', label: 'BPM ↓' },
+                      { value: 'stop', label: 'STOP' },
+                    ] as const).map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => onSettingsChange({ autoAdvanceMode: value as AutoAdvanceMode })}
+                        aria-pressed={settings.autoAdvanceMode === value}
+                        role="menuitemradio"
+                        className={`
+                          px-3 py-1.5 rounded-md text-sm font-bold transition-colors
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
+                          ${settings.autoAdvanceMode === value
+                            ? 'bg-cap-blue-vivid text-cap-paper'
+                            : 'bg-cap-bg text-cap-muted hover:text-cap-text'}
+                        `}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-cap-muted mt-1">
+                    What happens when the queue runs out
                   </p>
                 </div>
 
