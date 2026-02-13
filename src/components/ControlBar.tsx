@@ -16,6 +16,7 @@ export interface ControlBarProps {
   onTriggerNext: () => void;
   onRewind: () => void;
   onClearQueue?: () => void;
+  onHint?: (message: string) => void;
 }
 
 /**
@@ -40,6 +41,7 @@ export function ControlBar({
   onTriggerNext,
   onRewind,
   onClearQueue,
+  onHint,
 }: ControlBarProps) {
   const [isEditingBpm, setIsEditingBpm] = useState(false);
   const [editBpmValue, setEditBpmValue] = useState('');
@@ -70,9 +72,13 @@ export function ControlBar({
   }, [isSettingsOpen]);
 
   const handleBpmClick = useCallback(() => {
+    if (!settings.fixTempo) {
+      onHint?.('Turn on Tempo Lock in Settings to set a target BPM');
+      return;
+    }
     setEditBpmValue(Math.round(transportState.currentBpm).toString());
     setIsEditingBpm(true);
-  }, [transportState.currentBpm]);
+  }, [transportState.currentBpm, settings.fixTempo, onHint]);
 
   const handleBpmSubmit = useCallback(() => {
     const newBpm = parseInt(editBpmValue, 10);
@@ -91,7 +97,7 @@ export function ControlBar({
   }, [handleBpmSubmit]);
 
   const handleBpmDragStart = useCallback((e: React.MouseEvent) => {
-    if (isEditingBpm) return;
+    if (isEditingBpm || !settings.fixTempo) return;
     dragStartY.current = e.clientY;
     dragStartBpm.current = settings.targetBpm || transportState.currentBpm;
     
@@ -318,17 +324,21 @@ export function ControlBar({
             <button
               onClick={handleBpmClick}
               onMouseDown={handleBpmDragStart}
-              aria-label={`Current BPM: ${Math.round(transportState.currentBpm)}. Click to edit, drag to adjust.`}
+              aria-label={
+                settings.fixTempo
+                  ? `Tempo locked at ${Math.round(transportState.currentBpm)} BPM. Click to edit, drag to adjust.`
+                  : `Current BPM: ${Math.round(transportState.currentBpm)}. Enable Tempo Lock to set target BPM.`
+              }
               className={`
                 flex items-center gap-1.5 px-4 py-2 rounded-xl font-mono font-bold transition-colors min-h-[48px]
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
-                cursor-ns-resize select-none
+                select-none
                 ${settings.fixTempo
-                  ? 'bg-cap-green-vivid/20 text-cap-green border border-cap-green-deep'
-                  : 'bg-cap-btn text-cap-yellow hover:bg-cap-btn-hover'}
+                  ? 'bg-cap-green-vivid/20 text-cap-green border border-cap-green-deep cursor-ns-resize'
+                  : 'bg-cap-btn text-cap-muted hover:bg-cap-btn-hover cursor-pointer'}
               `}
             >
-              {settings.fixTempo && <Lock size={16} />}
+              {settings.fixTempo ? <Lock size={16} /> : <Unlock size={16} />}
               <span className="text-lg">{Math.round(transportState.currentBpm)}</span>
               <span className="text-xs uppercase">BPM</span>
             </button>

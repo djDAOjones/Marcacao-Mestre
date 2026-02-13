@@ -314,6 +314,7 @@ function App() {
         onTriggerNext={handleTriggerNext}
         onRewind={handleRewind}
         onClearQueue={handleClearQueue}
+        onHint={(msg) => pushToast('info', msg)}
       />
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 overflow-hidden">

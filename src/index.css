@@ -60,9 +60,10 @@
   --cap-leather: 90 58 34;
 }
 
-body {
+html, body {
   margin: 0;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   background: rgb(var(--cap-bg));
   color: rgb(var(--cap-text));
   transition: background-color 200ms, color 200ms;
