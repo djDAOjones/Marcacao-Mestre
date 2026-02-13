@@ -133,6 +133,25 @@ export class Deck {
     this.state = 'paused';
   }
 
+  /**
+   * Seek to an arbitrary position (seconds). Works in both playing and paused states.
+   * During playback, creates a fresh PitchShifter at the new position.
+   */
+  seek(position: number): void {
+    if (!this.audioBuffer) return;
+    const clamped = Math.max(0, Math.min(position, this.audioBuffer.duration - 0.05));
+    if (this.state === 'paused') {
+      this.pausedAt = clamped;
+      return;
+    }
+    if (this.isPlaying()) {
+      // Preserve current volume before recreating the shifter
+      const currentVol = this.volume;
+      this.play(clamped);
+      this.setVolume(currentVol);
+    }
+  }
+
   /** Resume from paused state, optionally at a different position (e.g. after rewind) */
   resume(fromPosition?: number): void {
     if (this.state !== 'paused' || !this.audioBuffer) return;

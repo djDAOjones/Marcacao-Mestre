@@ -245,8 +245,11 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [x] **Click history items to queue (Notes #6):**
   - [x] Click a history entry to re-add that track to the end of the queue
   - [x] Toast confirmation on re-queue; error if track not found in library
-- [ ] **Transport scrub bar (Notes #1):**
-  - [ ] Draggable playhead bar at bottom of screen for repositioning
+- [x] **Transport scrub bar (Notes #1):**
+  - [x] TransportBar component at bottom: track name, progress fill, scrub handle, time display
+  - [x] Pointer/touch drag to seek; keyboard arrows ±5s (shift ±15s)
+  - [x] Deck.seek() + DualDeckEngine.seek() for live repositioning
+  - [x] Disabled during mixing (crossfade). Hidden when idle.
 - [ ] **MP3 upload without beatmaps (Notes #7):**
   - [ ] Fallback mode: accept raw MP3s without beat maps
   - [ ] Use filename or metadata for tempo estimation

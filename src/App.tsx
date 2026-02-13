@@ -6,6 +6,7 @@ import { LibraryUpload } from './components/LibraryUpload';
 import { HelpModal, useFirstVisitHelp } from './components/HelpModal';
 import { ToastContainer, useToast } from './components/Toast';
 import { ResolutionWarning } from './components/ResolutionWarning';
+import { TransportBar } from './components/TransportBar';
 import { dualDeckEngine, type TransportState } from './lib/dualDeckEngine';
 import {
   saveSession,
@@ -40,6 +41,8 @@ function App() {
     transitionMode: 'mix',
     beatPosition: null,
     isPaused: false,
+    currentTime: 0,
+    trackDuration: 0,
   });
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [playHistory, setPlayHistory] = useState<HistoryEntry[]>([]);
@@ -339,6 +342,14 @@ function App() {
           onRequeueTrack={handleRequeueTrack}
         />
       </div>
+      <TransportBar
+        trackName={transportState.currentTrack?.name ?? null}
+        currentTime={transportState.currentTime}
+        duration={transportState.trackDuration}
+        isPlaying={transportState.phase === 'playing' && !transportState.isPaused}
+        isMixing={transportState.phase === 'mixing'}
+        onSeek={(pos) => dualDeckEngine.seek(pos)}
+      />
     </div>
   );
 }

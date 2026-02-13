@@ -41,6 +41,10 @@ export interface TransportState {
   transitionMode: TransitionMode;
   beatPosition: BeatPosition | null;
   isPaused: boolean;
+  /** Current playback position in seconds (for progress bar) */
+  currentTime: number;
+  /** Duration of the currently playing track in seconds */
+  trackDuration: number;
 }
 
 /** Engine configuration — controls transition behaviour and tempo */
@@ -714,6 +718,8 @@ class DualDeckEngine {
       mixProgress = Math.min(elapsed / this.mixDuration, 1);
     }
     
+    const deckStatus = activeDeck?.getStatus();
+
     return {
       phase: this.phase,
       currentTrack: activeDeck?.getTrack() ?? null,
@@ -723,8 +729,10 @@ class DualDeckEngine {
       targetBpm: this.targetBpm,
       mixProgress,
       transitionMode: this.config.transitionMode,
-      beatPosition: activeDeck?.getStatus().beatPosition ?? null,
+      beatPosition: deckStatus?.beatPosition ?? null,
       isPaused: this.isPausedByUser,
+      currentTime: deckStatus?.currentTime ?? 0,
+      trackDuration: activeDeck?.getTrack()?.duration ?? 0,
     };
   }
 
@@ -884,6 +892,17 @@ class DualDeckEngine {
     }
 
     console.log(`[DualDeck] Rewind: restarted ${activeDeck.getTrack()?.name}`);
+  }
+
+  /**
+   * Seek the active deck to a given position (seconds).
+   * Disabled during mixing to avoid breaking the crossfade.
+   */
+  seek(position: number): void {
+    if (this.phase === 'mixing') return;
+    const activeDeck = this.getActiveDeck();
+    if (!activeDeck?.getTrack()) return;
+    activeDeck.seek(position);
   }
 
   /** Trigger next queued track transition immediately (one track only) */
