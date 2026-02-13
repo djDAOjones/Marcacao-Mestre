@@ -195,8 +195,8 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Quick Start workflow summary
   - [x] 48px close/dismiss buttons (Carbon touch target)
 - [x] **Queue-end behaviour setting (Notes #4):**
-  - [x] Setting for what happens when queue empties: stop / random / tempo-ascending / tempo-descending
-  - [x] Default: next in library order. UI: 5-button toggle in settings dropdown
+  - [x] Setting for what happens when queue empties: BPM ↑ / BPM ↓ / STOP
+  - [x] Default: BPM ↑ (tempo-ascending). UI: 3-button radio group in settings
 - [x] **Double-click queue item to delete (Notes #5):**
   - [x] Double-click on queued item triggers animated remove (same as X button)
 - [x] **Default stopped state (Notes #10):**
