@@ -43,7 +43,7 @@ const HELP_SECTIONS = [
       'MIX / CUT — crossfade or quick-cut transitions',
       'Tempo Lock — time-stretch all tracks to same BPM',
       'Mix Duration — 1, 2, or 4 bar crossfade length',
-      'When Queue Ends — auto-advance mode (next / random / BPM / stop)',
+      'When Queue Ends — auto-advance mode (BPM ↑ / BPM ↓ / stop)',
       'Clear Queue — two-step confirmation to clear all',
       'Theme — toggle light / dark mode',
     ],

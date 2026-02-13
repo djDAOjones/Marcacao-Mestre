@@ -5,7 +5,7 @@ import {
   Settings, Trash2, Sun, Moon, Mic,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
-import type { AppSettings, AutoAdvanceMode } from '../types';
+import type { AppSettings } from '../types';
 import type { TransportState } from '../lib/dualDeckEngine';
 
 export interface ControlBarProps {
@@ -217,8 +217,8 @@ export function ControlBar({
                 aria-label="Settings"
               >
                 {/* MIX / CUT Toggle */}
-                <div className="px-4 py-3 border-b border-cap-border">
-                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
+                <div className="px-4 py-2 border-b border-cap-border">
+                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-1.5 block">
                     Transition Mode
                   </label>
                   <div className="flex items-center bg-cap-bg rounded-lg p-1" role="radiogroup" aria-label="Transition mode">
@@ -259,7 +259,7 @@ export function ControlBar({
                 </div>
 
                 {/* Tempo Lock Toggle */}
-                <div className="px-4 py-3 border-b border-cap-border">
+                <div className="px-4 py-2 border-b border-cap-border">
                   <button
                     onClick={() => onSettingsChange({ fixTempo: !settings.fixTempo })}
                     aria-pressed={settings.fixTempo}
@@ -286,8 +286,8 @@ export function ControlBar({
                 </div>
 
                 {/* Mix Duration (1/2/4 bars) */}
-                <div className="px-4 py-3 border-b border-cap-border">
-                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
+                <div className="px-4 py-2 border-b border-cap-border">
+                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-1.5 block">
                     Mix Duration
                   </label>
                   <div className="flex items-center bg-cap-bg rounded-lg p-1" role="radiogroup" aria-label="Mix duration">
@@ -315,39 +315,33 @@ export function ControlBar({
                 </div>
 
                 {/* Auto-Advance Mode */}
-                <div className="px-4 py-3 border-b border-cap-border">
-                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
+                <div className="px-4 py-2 border-b border-cap-border">
+                  <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-1.5 block">
                     When Queue Ends
                   </label>
-                  <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Auto-advance mode">
+                  <div className="flex items-center bg-cap-bg rounded-lg p-1" role="radiogroup" aria-label="Auto-advance mode">
                     {([
-                      { value: 'next', label: 'NEXT' },
-                      { value: 'random', label: 'RANDOM' },
-                      { value: 'tempo-asc', label: 'BPM ↑' },
-                      { value: 'tempo-desc', label: 'BPM ↓' },
-                      { value: 'stop', label: 'STOP' },
-                    ] as const).map(({ value, label }) => (
+                      { value: 'tempo-asc' as const, label: 'BPM ↑' },
+                      { value: 'tempo-desc' as const, label: 'BPM ↓' },
+                      { value: 'stop' as const, label: 'STOP' },
+                    ]).map(({ value, label }) => (
                       <button
                         key={value}
-                        onClick={() => onSettingsChange({ autoAdvanceMode: value as AutoAdvanceMode })}
-                        aria-pressed={settings.autoAdvanceMode === value}
+                        onClick={() => onSettingsChange({ autoAdvanceMode: value })}
                         role="radio"
                         aria-checked={settings.autoAdvanceMode === value}
                         className={`
-                          px-3 py-2 rounded-md text-base font-bold transition-colors min-h-[48px]
+                          flex-1 px-3 py-2 rounded-md text-base font-bold transition-colors min-h-[48px]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
                           ${settings.autoAdvanceMode === value
                             ? 'bg-cap-blue-vivid text-cap-paper'
-                            : 'bg-cap-bg text-cap-muted hover:text-cap-text'}
+                            : 'text-cap-muted hover:text-cap-text'}
                         `}
                       >
                         {label}
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-cap-muted mt-1">
-                    What happens when the queue runs out
-                  </p>
                 </div>
 
                 {/* Clear Queue — two-step confirmation (Nielsen #5: error prevention) */}
@@ -356,7 +350,7 @@ export function ControlBar({
                 )}
 
                 {/* Theme Toggle */}
-                <div className="px-4 py-3 border-t border-cap-border">
+                <div className="px-4 py-2 border-t border-cap-border">
                   <button
                     onClick={toggleTheme}
                     role="menuitem"
@@ -479,12 +473,12 @@ function ClearQueueButton({ onClearQueue, onClose }: { onClearQueue: () => void;
   }, []);
 
   return (
-    <div className="px-4 py-3">
+    <div className="px-4 py-2">
       <button
         onClick={handleClick}
         role="menuitem"
         className={`
-          flex items-center gap-3 w-full px-4 py-2 rounded-lg text-base font-bold
+          flex items-center gap-3 w-full px-4 py-2 rounded-lg text-base font-bold min-h-[48px]
           transition-colors
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
           ${confirming

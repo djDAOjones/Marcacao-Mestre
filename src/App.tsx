@@ -12,7 +12,7 @@ import {
   appendHistory,
   type HistoryEntry,
 } from './lib/sessionPersistence';
-import type { Library, Track, AppSettings, AutoAdvanceMode } from './types';
+import type { Library, Track, AppSettings } from './types';
 import { getNativeBpm } from './lib/beatScheduler';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   mixBars: 2,
   duckOn: false,
   duckLevel: 0.18,
-  autoAdvanceMode: 'next',
+  autoAdvanceMode: 'tempo-asc',
 };
 
 function App() {
@@ -92,25 +92,13 @@ function App() {
   useEffect(() => {
     dualDeckEngine.setOnTrackEnded(() => {
       const allTracks = tracksRef.current;
-      const mode: AutoAdvanceMode = settingsRef.current.autoAdvanceMode;
+      const mode = settingsRef.current.autoAdvanceMode;
       if (allTracks.length === 0 || mode === 'stop') return;
 
       const currentTrack = dualDeckEngine.getCurrentTrack();
-      const currentIndex = currentTrack
-        ? allTracks.findIndex(t => t.id === currentTrack.id)
-        : -1;
-
       let nextTrack: Track | undefined;
 
       switch (mode) {
-        case 'random': {
-          // Pick a random track that isn't the current one
-          const candidates = allTracks.filter(t => t.id !== currentTrack?.id);
-          nextTrack = candidates.length > 0
-            ? candidates[Math.floor(Math.random() * candidates.length)]
-            : allTracks[0];
-          break;
-        }
         case 'tempo-asc': {
           // Sort by BPM ascending, pick next one above current
           const sorted = [...allTracks].sort(
@@ -129,13 +117,6 @@ function App() {
           const curBpm = currentTrack ? getNativeBpm(currentTrack.beatMap) : Infinity;
           nextTrack = sorted.find(t => getNativeBpm(t.beatMap) < curBpm && t.id !== currentTrack?.id)
             ?? sorted[0]; // wrap to fastest
-          break;
-        }
-        case 'next':
-        default: {
-          // Next in library order, wrapping
-          const nextIndex = (currentIndex + 1) % allTracks.length;
-          nextTrack = allTracks[nextIndex];
           break;
         }
       }
