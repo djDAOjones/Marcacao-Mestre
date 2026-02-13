@@ -288,7 +288,8 @@ function QueueEntry({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      onDoubleClick={onRemove}
+      onDoubleClick={onRemove && !isExiting ? onRemove : undefined}
+      title={onRemove ? 'Double-click to remove' : undefined}
       className={`
         flex items-center gap-1.5 px-2 py-2.5
         border-l-4 ${style.border} ${style.bg}
@@ -302,7 +303,7 @@ function QueueEntry({
         transition-all duration-150 motion-reduce:transition-none
       `}
       role="listitem"
-      aria-label={`${label}: ${track.name}, ${bpm} BPM`}
+      aria-label={`${label}: ${track.name}, ${bpm} BPM${onRemove ? '. Double-click to remove' : ''}`}
       aria-grabbed={isDragging}
     >
       {/* Drag handle (only for draggable items) */}

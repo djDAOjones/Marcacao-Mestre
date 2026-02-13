@@ -319,7 +319,7 @@ export function ControlBar({
                   <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
                     When Queue Ends
                   </label>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Auto-advance mode">
                     {([
                       { value: 'next', label: 'NEXT' },
                       { value: 'random', label: 'RANDOM' },
@@ -331,9 +331,10 @@ export function ControlBar({
                         key={value}
                         onClick={() => onSettingsChange({ autoAdvanceMode: value as AutoAdvanceMode })}
                         aria-pressed={settings.autoAdvanceMode === value}
-                        role="menuitemradio"
+                        role="radio"
+                        aria-checked={settings.autoAdvanceMode === value}
                         className={`
-                          px-3 py-1.5 rounded-md text-sm font-bold transition-colors
+                          px-3 py-2 rounded-md text-base font-bold transition-colors min-h-[48px]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
                           ${settings.autoAdvanceMode === value
                             ? 'bg-cap-blue-vivid text-cap-paper'
