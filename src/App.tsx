@@ -3,6 +3,8 @@ import { ControlBar } from './components/ControlBar';
 import { TrackGrid } from './components/TrackGrid';
 import { QueuePanel } from './components/QueuePanel';
 import { LibraryUpload } from './components/LibraryUpload';
+import { HelpModal, useFirstVisitHelp } from './components/HelpModal';
+import { ToastContainer, useToast } from './components/Toast';
 import { dualDeckEngine, type TransportState } from './lib/dualDeckEngine';
 import {
   saveSession,
@@ -40,6 +42,9 @@ function App() {
   });
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [playHistory, setPlayHistory] = useState<HistoryEntry[]>([]);
+
+  // Toast notifications for user-visible error/success feedback (Nielsen #1, #9)
+  const { toasts, pushToast, dismissToast } = useToast();
 
   // Refs so the auto-advance callback always has the latest values
   const tracksRef = useRef<Track[]>([]);
@@ -173,8 +178,9 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to handle track:', err);
+      pushToast('error', `Failed to play track: ${err instanceof Error ? err.message : 'unknown error'}`);
     }
-  }, [transportState.phase]);
+  }, [transportState.phase, pushToast]);
 
   // Double click: insert as next in queue
   const handleDoubleClick = useCallback(async (track: Track) => {
@@ -187,8 +193,9 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to handle track:', err);
+      pushToast('error', `Failed to queue track: ${err instanceof Error ? err.message : 'unknown error'}`);
     }
-  }, [transportState.phase]);
+  }, [transportState.phase, pushToast]);
 
   // Triple click: immediate 2-bar mix, queue resumes after
   const handleTripleClick = useCallback(async (track: Track) => {
@@ -197,8 +204,9 @@ function App() {
       await dualDeckEngine.mixTrackImmediately(track);
     } catch (err) {
       console.error('Failed to handle track:', err);
+      pushToast('error', `Failed to mix track: ${err instanceof Error ? err.message : 'unknown error'}`);
     }
-  }, []);
+  }, [pushToast]);
 
   const handleTogglePause = useCallback(() => {
     dualDeckEngine.togglePause();
@@ -260,14 +268,48 @@ function App() {
   // Derive queued track IDs for highlighting in the grid
   const queuedTrackIds = transportState.queue.map(q => q.track.id);
 
+  // Help modal state — auto-show on first visit (Nielsen #10)
+  const { isFirstVisit, markSeen } = useFirstVisitHelp();
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Show help on first visit after library loads
+  useEffect(() => {
+    if (library && isFirstVisit) {
+      setIsHelpOpen(true);
+    }
+  }, [library, isFirstVisit]);
+
+  const handleCloseHelp = useCallback(() => {
+    setIsHelpOpen(false);
+    markSeen();
+  }, [markSeen]);
+
   if (!library) {
     return <LibraryUpload onLibraryLoaded={handleLibraryLoaded} />;
   }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <div className="fixed bottom-2 right-2 text-xs text-cap-disabled bg-cap-panel/80 px-2 py-1 rounded z-50">
-        v{import.meta.env.VITE_APP_VERSION}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <HelpModal isOpen={isHelpOpen} onClose={handleCloseHelp} />
+      <div className="fixed bottom-2 right-2 flex items-center gap-2 z-50">
+        <button
+          onClick={() => setIsHelpOpen(true)}
+          aria-label="Help"
+          title="Help & controls guide"
+          className="
+            text-xs text-cap-muted hover:text-cap-text
+            bg-cap-panel/80 hover:bg-cap-panel
+            px-2 py-1 rounded border border-cap-border/50
+            transition-colors min-h-[32px] min-w-[32px]
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
+          "
+        >
+          ?
+        </button>
+        <span className="text-xs text-cap-disabled bg-cap-panel/80 px-2 py-1 rounded">
+          v{import.meta.env.VITE_APP_VERSION}
+        </span>
       </div>
       <ControlBar
         transportState={transportState}

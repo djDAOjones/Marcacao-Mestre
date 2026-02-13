@@ -1,0 +1,21 @@
+{
+  "name": "Marcação Mestre",
+  "short_name": "Marcação",
+  "description": "Capoeira music DJ app — tempo-grouped track grid with beat-synced transitions",
+  "start_url": "/Marcacao-Mestre/",
+  "scope": "/Marcacao-Mestre/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a6b3c",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "entertainment"],
+  "lang": "en"
+}

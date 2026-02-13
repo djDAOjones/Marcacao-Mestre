@@ -154,23 +154,41 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 ---
 
 ### Phase 5: PWA & Offline
-- [ ] Service worker + offline caching
-- [ ] Install prompt / Add to Home Screen
+- [x] **Service worker + offline caching:**
+  - [x] Cache-first app shell (HTML, CSS, JS, icons)
+  - [x] Network-first navigation (offline fallback)
+  - [x] Stale-while-revalidate for other assets
+  - [x] Archive.zip excluded from SW cache (too large)
+  - [x] Versioned cache with automatic purge on deploy
+- [x] **Install prompt / Add to Home Screen (PWA):**
+  - [x] Web app manifest with name, icons, orientation, theme
+  - [x] apple-mobile-web-app-capable meta tags for iOS
+  - [x] SVG app icon with capoeira branding
+  - [x] Standalone display, landscape orientation preferred
 - [ ] Touch optimisation + large hit targets
 - [x] **Responsive layout (1024×768 → 2560×1440):**
   - [x] Min resolution: 1024 (w) × 768 (h)
   - [x] Max resolution: 2560 (w) × 1440 (h)
   - [x] Graceful degradation beyond those bounds
 - [ ] Tablet layout testing
-- [ ] Error handling + validation feedback
+- [x] **Error handling + validation feedback:**
+  - [x] Toast notification system (error/success/info variants)
+  - [x] Auto-dismiss with variant-specific durations (3-6s)
+  - [x] User-visible error messages on track load/queue/mix failures
+  - [x] ARIA role="status" + aria-live="polite" for screen readers
+  - [x] IBM Carbon inline notification pattern
 - [ ] **Lazy Decode + Eviction Cache (Notes #12):**
   - [ ] Store MP3 blobs in Cache API (disk) instead of decoding all at ZIP load
   - [ ] Decode on demand when track is queued (1-2s lead time)
   - [ ] Keep max 3 AudioBuffers in memory (playing + next + preload)
   - [ ] Evict old buffers after deck swap — enables 150 MB+ libraries on iPad 5
-- [ ] **Help / onboarding (Notes #2):**
-  - [ ] Instructions on splash screen explaining workflow
-  - [ ] Help button in app to explain controls and interactions
+- [x] **Help / onboarding (Notes #2):**
+  - [x] Help modal with grouped interaction instructions
+  - [x] Auto-shown on first visit (localStorage flag)
+  - [x] ? button in bottom-right corner to re-open
+  - [x] Focus trap, Escape to close, click-outside to close (WCAG AAA)
+  - [x] Quick Start workflow summary
+  - [x] 48px close/dismiss buttons (Carbon touch target)
 - [x] **Queue-end behaviour setting (Notes #4):**
   - [x] Setting for what happens when queue empties: stop / random / tempo-ascending / tempo-descending
   - [x] Default: next in library order. UI: 5-button toggle in settings dropdown
