@@ -150,7 +150,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
               onClick={() => onDismiss(toast.id)}
               aria-label="Dismiss notification"
               className="
-                flex-shrink-0 p-1 rounded min-h-[32px] min-w-[32px]
+                flex-shrink-0 p-2 rounded min-h-[44px] min-w-[44px]
                 flex items-center justify-center
                 text-cap-muted hover:text-cap-text
                 transition-colors

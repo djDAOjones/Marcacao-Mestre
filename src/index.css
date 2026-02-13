@@ -71,6 +71,8 @@ body {
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  /* Prevent double-tap zoom on touch devices — enables double-click interactions */
+  touch-action: manipulation;
 }
 
 /* Thin scrollbar for horizontal tempo rows */

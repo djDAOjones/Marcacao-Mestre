@@ -333,7 +333,8 @@ function QueueEntry({
         <button
           onClick={onRemove}
           className="
-            flex-shrink-0 p-1 rounded
+            flex-shrink-0 p-2 rounded min-h-[44px] min-w-[44px]
+            flex items-center justify-center
             text-cap-disabled hover:text-cap-red hover:bg-cap-burgundy-vivid/30
             opacity-0 group-hover:opacity-100 focus-visible:opacity-100
             transition-opacity duration-100
@@ -342,7 +343,7 @@ function QueueEntry({
           aria-label={`Remove ${track.name} from queue`}
           title="Remove from queue"
         >
-          <X size={14} />
+          <X size={16} />
         </button>
       )}
     </div>
