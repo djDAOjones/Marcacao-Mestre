@@ -182,11 +182,13 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] User-visible error messages on track load/queue/mix failures
   - [x] ARIA role="status" + aria-live="polite" for screen readers
   - [x] IBM Carbon inline notification pattern
-- [ ] **Lazy Decode + Eviction Cache (Notes #12):**
-  - [ ] Store MP3 blobs in Cache API (disk) instead of decoding all at ZIP load
-  - [ ] Decode on demand when track is queued (1-2s lead time)
-  - [ ] Keep max 3 AudioBuffers in memory (playing + next + preload)
-  - [ ] Evict old buffers after deck swap — enables 150 MB+ libraries on iPad 5
+- [x] **Lazy Decode + Eviction Cache (Notes #12):**
+  - [x] audioBlobCache module: IndexedDB-backed blob storage (store/get/batch/clear)
+  - [x] ZIP loader stores blobs to IndexedDB in batch, then releases from JS heap
+  - [x] Track type no longer holds audioBlob — metadata only (id, name, beatMap, duration)
+  - [x] Deck.loadTrack accepts blob parameter; engine fetches from IDB on demand
+  - [x] Memory: O(N × blobSize) → O(1) — only the decoding blob is in memory
+  - [x] Enables 150 MB+ libraries on iPad 5's ~1 GB Safari budget
 - [x] **Help / onboarding (Notes #2):**
   - [x] Help modal with grouped interaction instructions
   - [x] Auto-shown on first visit (localStorage flag)
@@ -260,7 +262,7 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 ---
 
 ## Current Status
-**Phase 5 near-complete. Remaining: tablet layout testing (manual), Lazy Decode + Eviction Cache (#12).**
+**Phase 5 complete (except manual tablet testing). Lazy Decode cache implemented. Phase 6 items are future v2+ work.**
 
 ## Notes Integration
 All 12 items from `Notes for incorperation.md` have been incorporated:

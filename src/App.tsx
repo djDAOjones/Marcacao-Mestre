@@ -133,6 +133,7 @@ function App() {
   const handleLibraryLoaded = useCallback((lib: Library, loadedTracks: Track[]) => {
     setLibrary(lib);
     setTracks(loadedTracks);
+    dualDeckEngine.setLibraryId(lib.id);
 
     // Restore saved session (queue + history) for this library
     const saved = restoreSession(lib.id, loadedTracks);

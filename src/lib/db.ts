@@ -4,7 +4,6 @@ import type { Track, Library, BeatMap } from '../types';
 interface TrackRecord {
   id: string;
   name: string;
-  audioBlob: Blob;
   beatMap: BeatMap;
   duration: number;
 }

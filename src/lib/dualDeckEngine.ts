@@ -20,6 +20,7 @@ import type { Track, QueueItem, TransitionMode } from '../types';
 import { Deck } from './deck';
 import { QueueManager } from './queueManager';
 import { getNextDownbeat, getNativeBpm, type BeatPosition } from './beatScheduler';
+import { getBlob } from './audioBlobCache';
 
 // =============================================================================
 // Types
@@ -90,6 +91,9 @@ class DualDeckEngine {
   };
 
   private targetBpm: number = 120;
+
+  /** Current library ID — needed to fetch audio blobs from IndexedDB */
+  private libraryId: string | null = null;
 
   // ===========================================================================
   // Pause / resume constants
@@ -436,7 +440,8 @@ class DualDeckEngine {
     }
     
     try {
-      await inactiveDeck.loadTrack(item.track);
+      const blob = await this.fetchBlob(item.track);
+      await inactiveDeck.loadTrack(item.track, blob);
       this.queueManager.setActiveItem(item);
       this.pendingMixTime = null;
       this.phase = 'queued';
@@ -484,7 +489,8 @@ class DualDeckEngine {
       return;
     }
     
-    await deck.loadTrack(track);
+    const blob = await this.fetchBlob(track);
+    await deck.loadTrack(track, blob);
     console.log(`[DualDeck] Track loaded into deck`);
     
     // Respect tempo lock: if fixTempo is ON, stretch to targetBpm
@@ -656,6 +662,29 @@ class DualDeckEngine {
   // ===========================================================================
   // Configuration
   // ===========================================================================
+
+  /**
+   * Set the active library ID — required before loading any tracks.
+   * Audio blobs are keyed by libraryId in IndexedDB.
+   */
+  setLibraryId(id: string): void {
+    this.libraryId = id;
+  }
+
+  /**
+   * Fetch an audio blob from IndexedDB for the given track.
+   * Throws if the blob is missing (library may need re-upload).
+   */
+  private async fetchBlob(track: Track): Promise<Blob> {
+    if (!this.libraryId) {
+      throw new Error('[DualDeck] No library ID set — call setLibraryId() first');
+    }
+    const blob = await getBlob(this.libraryId, track.id);
+    if (!blob) {
+      throw new Error(`[DualDeck] Audio blob not found for "${track.name}" (id: ${track.id})`);
+    }
+    return blob;
+  }
 
   /** Set target BPM (clamped 60–200) */
   setTargetBpm(bpm: number): void {

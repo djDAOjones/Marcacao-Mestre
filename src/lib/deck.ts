@@ -61,12 +61,17 @@ export class Deck {
     this.gainNode.connect(outputNode);
   }
 
-  /** Decode audio blob and store the buffer. Sets state to 'idle' when done. */
-  async loadTrack(track: Track): Promise<void> {
+  /**
+   * Decode an audio blob and store the buffer. Sets state to 'idle' when done.
+   *
+   * @param track     - Track metadata (beat map, duration, etc.)
+   * @param audioBlob - Raw audio blob retrieved from IndexedDB (audioBlobCache)
+   */
+  async loadTrack(track: Track, audioBlob: Blob): Promise<void> {
     this.state = 'loading';
     this.track = track;
     
-    const arrayBuffer = await track.audioBlob.arrayBuffer();
+    const arrayBuffer = await audioBlob.arrayBuffer();
     this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
     
     this.state = 'idle';

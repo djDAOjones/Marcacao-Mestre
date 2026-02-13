@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { parseMidi } from './midiParser';
+import { storeBlobBatch } from './audioBlobCache';
 import type { Manifest, Track, Library, BeatMap } from '../types';
 
 /** crypto.randomUUID polyfill for Safari < 15.4 / insecure contexts */
@@ -104,7 +105,11 @@ export async function loadZipLibrary(file: File): Promise<LoadResult> {
     manifest = generateManifestFromZip(zip, file.name);
   }
   
+  // Generate library ID upfront so we can scope IndexedDB entries
+  const libraryId = generateId();
+
   const tracks: Track[] = [];
+  const blobEntries: Array<{ trackId: string; blob: Blob }> = [];
   
   for (const trackInfo of manifest.tracks) {
     const audioFile = zip.file(trackInfo.audio);
@@ -122,18 +127,26 @@ export async function loadZipLibrary(file: File): Promise<LoadResult> {
     const beatMap = parseMidi(beatmapBuffer);
     
     const duration = await getAudioDuration(audioBlob, beatMap);
+    const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
     
+    // Collect blob for batch IndexedDB write (released after store)
+    blobEntries.push({ trackId: trackInfo.id, blob: typedBlob });
+    
+    // Track objects hold metadata only — no audioBlob in memory
     tracks.push({
       id: trackInfo.id,
       name: trackInfo.name,
-      audioBlob: new Blob([audioBlob], { type: 'audio/mpeg' }),
       beatMap,
       duration,
     });
   }
   
+  // Batch-write all audio blobs to IndexedDB (disk), then release from JS heap
+  await storeBlobBatch(libraryId, blobEntries);
+  blobEntries.length = 0; // allow GC
+
   const library: Library = {
-    id: generateId(),
+    id: libraryId,
     name: manifest.name,
     gridColumns: manifest.grid?.columns ?? 4,
     trackIds: tracks.map(t => t.id),

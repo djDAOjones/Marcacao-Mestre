@@ -20,11 +20,14 @@ export interface BeatMap {
 // Track & Library
 // =============================================================================
 
-/** A single audio track with its decoded audio and beat map */
+/**
+ * A single audio track with its beat map metadata.
+ * Audio blobs are stored in IndexedDB (audioBlobCache) to avoid
+ * holding all MP3 data in memory simultaneously.
+ */
 export interface Track {
   id: string;
   name: string;
-  audioBlob: Blob;
   beatMap: BeatMap;
   duration: number;
 }
