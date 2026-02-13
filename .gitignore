@@ -29,3 +29,8 @@ npm-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Large music library archives (exceed GitHub 100MB limit)
+Archive.zip
+Archive-old*.zip
+public/Archive.zip
