@@ -157,7 +157,7 @@ export function LibraryUpload({ onLibraryLoaded }: LibraryUploadProps) {
             onClick={loadDemoLibrary}
             disabled={isLoading}
             aria-label="Load demo library with sample Capoeira tracks"
-            className="px-6 py-3 bg-cap-green-vivid hover:bg-cap-green-vivid/80 disabled:bg-cap-btn-hover 
+            className="px-6 py-3 min-h-[48px] bg-cap-green-vivid hover:bg-cap-green-vivid/80 disabled:bg-cap-btn-hover 
                        text-cap-paper font-bold rounded-xl transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text"
           >

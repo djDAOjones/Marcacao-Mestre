@@ -240,8 +240,9 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
   - [x] Collapsible history section in QueuePanel (most recent first)
   - [x] Shows track name + timestamp for each play
   - [ ] Navigate back to a previously played track (future enhancement)
-- [ ] **Click history items to queue (Notes #6):**
-  - [ ] Tap a history entry to re-add that track to the queue
+- [x] **Click history items to queue (Notes #6):**
+  - [x] Click a history entry to re-add that track to the end of the queue
+  - [x] Toast confirmation on re-queue; error if track not found in library
 - [ ] **Transport scrub bar (Notes #1):**
   - [ ] Draggable playhead bar at bottom of screen for repositioning
 - [ ] **MP3 upload without beatmaps (Notes #7):**
@@ -259,7 +260,7 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 ---
 
 ## Current Status
-**Phase 4 complete. Phase 5 in progress — remaining: service worker, install prompt, lazy decode cache, help/onboarding, queue-end settings, tablet testing.**
+**Phase 5 near-complete. Remaining: tablet layout testing (manual), Lazy Decode + Eviction Cache (#12).**
 
 ## Notes Integration
 All 12 items from `Notes for incorperation.md` have been incorporated:

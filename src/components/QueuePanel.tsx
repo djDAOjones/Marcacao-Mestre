@@ -20,6 +20,8 @@ export interface QueuePanelProps {
   onReorder: (fromIndex: number, toIndex: number) => void;
   /** Play history entries (most recent last) */
   playHistory?: HistoryEntry[];
+  /** Callback when user clicks a history item to re-queue it */
+  onRequeueTrack?: (trackId: string) => void;
 }
 
 /**
@@ -39,6 +41,7 @@ export function QueuePanel({
   onRemoveFromQueue,
   onReorder,
   playHistory = [],
+  onRequeueTrack,
 }: QueuePanelProps) {
   const [showHistory, setShowHistory] = useState(false);
   const hasContent = currentTrack || nextTrack || queue.length > 0;
@@ -190,7 +193,7 @@ export function QueuePanel({
         <div className="border-t border-cap-border">
           <button
             onClick={() => setShowHistory(prev => !prev)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-cap-muted uppercase tracking-wider hover:text-cap-text-sec transition-colors select-none"
+            className="w-full flex items-center gap-2 px-3 py-2 min-h-[44px] text-sm font-semibold text-cap-muted uppercase tracking-wider hover:text-cap-text-sec transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cap-text"
             aria-expanded={showHistory}
             aria-controls="play-history-list"
           >
@@ -206,17 +209,27 @@ export function QueuePanel({
               aria-label="Play history"
             >
               {[...playHistory].reverse().map((entry, i) => (
-                <div
+                <button
                   key={`${entry.trackId}-${entry.playedAt}`}
-                  className="flex items-center gap-2 px-3 py-1.5 border-b border-cap-border-sub/50 text-xs"
+                  onClick={() => onRequeueTrack?.(entry.trackId)}
+                  disabled={!onRequeueTrack}
+                  title={onRequeueTrack ? 'Click to add to queue' : undefined}
+                  className={`
+                    w-full flex items-center gap-2 px-3 py-1.5 border-b border-cap-border-sub/50 text-xs
+                    min-h-[36px] text-left transition-colors
+                    ${onRequeueTrack
+                      ? 'hover:bg-cap-gold-vivid/10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cap-text'
+                      : 'cursor-default'}
+                  `}
                   role="listitem"
+                  aria-label={`${entry.trackName} — click to add to queue`}
                 >
                   <span className="text-cap-muted tabular-nums w-4 flex-shrink-0">{playHistory.length - i}</span>
                   <span className="text-cap-text-sec truncate flex-1">{entry.trackName}</span>
                   <span className="text-cap-muted tabular-nums flex-shrink-0">
                     {new Date(entry.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           )}

@@ -221,13 +221,13 @@ export function ControlBar({
                   <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
                     Transition Mode
                   </label>
-                  <div className="flex items-center bg-cap-bg rounded-lg p-1">
+                  <div className="flex items-center bg-cap-bg rounded-lg p-1" role="radiogroup" aria-label="Transition mode">
                     <button
                       onClick={() => onSettingsChange({ transitionMode: 'mix' })}
-                      aria-pressed={settings.transitionMode === 'mix'}
-                      role="menuitemradio"
+                      aria-checked={settings.transitionMode === 'mix'}
+                      role="radio"
                       className={`
-                        flex-1 px-4 py-2 rounded-md text-base font-bold transition-colors
+                        flex-1 px-4 py-2 rounded-md text-base font-bold transition-colors min-h-[48px]
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
                         ${settings.transitionMode === 'mix' 
                           ? 'bg-cap-blue-vivid text-cap-paper' 
@@ -238,10 +238,10 @@ export function ControlBar({
                     </button>
                     <button
                       onClick={() => onSettingsChange({ transitionMode: 'cut' })}
-                      aria-pressed={settings.transitionMode === 'cut'}
-                      role="menuitemradio"
+                      aria-checked={settings.transitionMode === 'cut'}
+                      role="radio"
                       className={`
-                        flex-1 px-4 py-2 rounded-md text-base font-bold transition-colors
+                        flex-1 px-4 py-2 rounded-md text-base font-bold transition-colors min-h-[48px]
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
                         ${settings.transitionMode === 'cut' 
                           ? 'bg-cap-gourd-vivid text-cap-paper' 
@@ -265,7 +265,7 @@ export function ControlBar({
                     aria-pressed={settings.fixTempo}
                     role="menuitemcheckbox"
                     className={`
-                      flex items-center gap-3 w-full px-4 py-2 rounded-lg text-base font-bold transition-colors
+                      flex items-center gap-3 w-full px-4 py-2 rounded-lg text-base font-bold transition-colors min-h-[48px]
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
                       ${settings.fixTempo 
                         ? 'bg-cap-green-vivid/20 text-cap-green border border-cap-green-deep' 
@@ -290,13 +290,13 @@ export function ControlBar({
                   <label className="text-sm font-semibold text-cap-muted uppercase tracking-wider mb-2 block">
                     Mix Duration
                   </label>
-                  <div className="flex items-center bg-cap-bg rounded-lg p-1">
+                  <div className="flex items-center bg-cap-bg rounded-lg p-1" role="radiogroup" aria-label="Mix duration">
                     {([1, 2, 4] as const).map((bars) => (
                       <button
                         key={bars}
                         onClick={() => onSettingsChange({ mixBars: bars })}
-                        aria-pressed={settings.mixBars === bars}
-                        role="menuitemradio"
+                        aria-checked={settings.mixBars === bars}
+                        role="radio"
                         className={`
                           flex-1 px-3 py-2 rounded-md text-base font-bold transition-colors
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text

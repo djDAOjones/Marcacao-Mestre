@@ -236,6 +236,17 @@ function App() {
     dualDeckEngine.reorderQueue(fromIndex, toIndex);
   }, []);
 
+  // Click history item to re-queue it (Notes #6)
+  const handleRequeueTrack = useCallback((trackId: string) => {
+    const track = tracksRef.current.find(t => t.id === trackId);
+    if (track) {
+      dualDeckEngine.addToQueue(track, 'end');
+      pushToast('info', `Added "${track.name}" to queue`);
+    } else {
+      pushToast('error', 'Track not found in library');
+    }
+  }, [pushToast]);
+
   // ---------- Session persistence ----------
 
   // Record play history when the current track changes
@@ -340,6 +351,7 @@ function App() {
           onRemoveFromQueue={handleRemoveFromQueue}
           onReorder={handleReorderQueue}
           playHistory={playHistory}
+          onRequeueTrack={handleRequeueTrack}
         />
       </div>
     </div>
