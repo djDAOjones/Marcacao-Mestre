@@ -13,14 +13,14 @@ const GRID_PADDING = 12;
 const ROW_GAP = 8;
 /** Height consumed by each row's BPM label + margin */
 const ROW_HEADER_HEIGHT = 20;
-/** Minimum readable button height (px) */
-const MIN_BUTTON_HEIGHT = 48;
+/** Minimum readable button height (px) — sized for 2 lines of text-base + BPM */
+const MIN_BUTTON_HEIGHT = 72;
 /** Maximum button height to prevent oversized buttons on large screens */
-const MAX_BUTTON_HEIGHT = 100;
+const MAX_BUTTON_HEIGHT = 120;
 /** Minimum tempo rows to display */
 const MIN_ROWS = 2;
-/** Maximum tempo rows to display */
-const MAX_ROWS = 10;
+/** Maximum tempo rows to display — capped at 6 for legibility (Nielsen #8) */
+const MAX_ROWS = 6;
 /** Debounce interval (ms) for ResizeObserver to avoid excessive layout recalcs */
 const RESIZE_DEBOUNCE_MS = 100;
 
@@ -170,7 +170,7 @@ export function TrackGrid({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-2 p-3 bg-cap-bg h-full"
+      className="flex flex-col gap-2 p-3 bg-cap-bg h-full overflow-y-auto"
       role="region"
       aria-label="Track library"
     >
@@ -181,7 +181,7 @@ export function TrackGrid({
           className="flex flex-col min-h-0"
         >
           {/* Row header with BPM range label */}
-          <h2 className="text-xs font-semibold text-cap-muted uppercase tracking-wider px-1 mb-0.5 select-none flex-shrink-0">
+          <h2 className="text-sm font-semibold text-cap-muted uppercase tracking-wider px-1 mb-0.5 select-none flex-shrink-0">
             {row.label}
           </h2>
           {/* Horizontally scrollable row of track buttons */}

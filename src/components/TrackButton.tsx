@@ -55,9 +55,9 @@ export const TrackButton = memo(function TrackButton({ track, state, height, onS
       title="Click: queue · Double-click: play next · Triple-click: mix now"
       style={height ? { height: `${height}px` } : undefined}
       className={`
-        w-[140px] ${height ? '' : 'h-[72px]'}
-        flex flex-col items-center justify-center gap-0.5
-        text-center text-sm font-medium
+        w-[168px] ${height ? '' : 'h-[72px]'}
+        flex flex-col items-center justify-center gap-1
+        text-center text-base font-medium
         rounded-lg border-2
         transition-colors duration-150
         active:scale-95
@@ -69,7 +69,7 @@ export const TrackButton = memo(function TrackButton({ track, state, height, onS
       <span className="px-1 break-words leading-tight line-clamp-2">
         {track.name}
       </span>
-      <span className="text-xs text-cap-text-sec font-mono tabular-nums">
+      <span className="text-sm text-cap-text-sec font-mono tabular-nums">
         {bpm} BPM
       </span>
     </button>
