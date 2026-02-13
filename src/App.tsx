@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ControlBar } from './components/ControlBar';
 import { TrackGrid } from './components/TrackGrid';
 import { QueuePanel } from './components/QueuePanel';
@@ -59,16 +59,13 @@ function App() {
   // Track the last-known current track ID to detect track changes for history
   const lastCurrentTrackIdRef = useRef<string | null>(null);
 
+  // Poll transport state at ~15fps (66ms) instead of 60fps rAF.
+  // Saves ~75% CPU on old tablets — UI updates at 15fps are perceptually smooth.
   useEffect(() => {
-    let animationId: number;
-
-    const updateState = () => {
+    const id = setInterval(() => {
       setTransportState(dualDeckEngine.getTransportState());
-      animationId = requestAnimationFrame(updateState);
-    };
-
-    updateState();
-    return () => cancelAnimationFrame(animationId);
+    }, 66);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -262,8 +259,11 @@ function App() {
     };
   }, [library, transportState.queue, transportState.currentTrack, playHistory]);
 
-  // Derive queued track IDs for highlighting in the grid
-  const queuedTrackIds = transportState.queue.map(q => q.track.id);
+  // Derive queued track IDs for highlighting in the grid (memoised to avoid new array every poll tick)
+  const queuedTrackIds = useMemo(
+    () => transportState.queue.map(q => q.track.id),
+    [transportState.queue],
+  );
 
   // Help modal state — auto-show on first visit (Nielsen #10)
   const { isFirstVisit, markSeen } = useFirstVisitHelp();

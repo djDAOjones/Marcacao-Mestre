@@ -10,7 +10,7 @@
  *   - WCAG AAA: role="slider", keyboard arrows, high-contrast fill
  *
  * Height: 36px — minimal vertical footprint for 1024×768 fit.
- * Hidden when idle (no track loaded).
+ * Always visible: shows 'No track loaded' placeholder when idle.
  */
 
 import { useRef, useCallback } from 'react';
@@ -43,10 +43,8 @@ export function TransportBar({
   const barRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
-  // Don't render when no track is loaded
-  if (!trackName || duration <= 0) return null;
-
-  const progress = Math.min(currentTime / duration, 1);
+  const isIdle = !trackName || duration <= 0;
+  const progress = isIdle ? 0 : Math.min(currentTime / duration, 1);
 
   /** Convert a pointer X position to a seek time */
   const getSeekTime = (clientX: number): number => {
@@ -57,7 +55,7 @@ export function TransportBar({
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (isMixing) return; // Disable scrub during crossfade
+    if (isIdle || isMixing) return; // Disable scrub when idle or during crossfade
     isDragging.current = true;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     onSeek(getSeekTime(e.clientX));
@@ -74,7 +72,7 @@ export function TransportBar({
 
   /** Keyboard scrub: left/right arrows ±5s, shift ±15s */
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (isMixing) return;
+    if (isIdle || isMixing) return;
     const step = e.shiftKey ? 15 : 5;
     if (e.key === 'ArrowRight') {
       onSeek(Math.min(currentTime + step, duration));
@@ -83,7 +81,7 @@ export function TransportBar({
       onSeek(Math.max(currentTime - step, 0));
       e.preventDefault();
     }
-  }, [currentTime, duration, isMixing, onSeek]);
+  }, [isIdle, currentTime, duration, isMixing, onSeek]);
 
   return (
     <div
@@ -91,9 +89,9 @@ export function TransportBar({
       role="region"
       aria-label="Transport progress"
     >
-      {/* Track name — truncated */}
-      <span className="text-xs font-medium text-cap-text-sec truncate min-w-0 max-w-[180px]">
-        {trackName}
+      {/* Track name — truncated, or placeholder when idle */}
+      <span className={`text-xs font-medium truncate min-w-0 max-w-[180px] ${isIdle ? 'text-cap-disabled italic' : 'text-cap-text-sec'}`}>
+        {isIdle ? 'No track loaded' : trackName}
       </span>
 
       {/* Progress bar / scrub region */}
@@ -109,7 +107,7 @@ export function TransportBar({
         className={`
           flex-1 h-6 flex items-center cursor-pointer rounded
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text
-          ${isMixing ? 'opacity-50 cursor-not-allowed' : ''}
+          ${isIdle || isMixing ? 'opacity-50 cursor-not-allowed' : ''}
         `}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -130,7 +128,7 @@ export function TransportBar({
             className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2
               transition-[left] duration-100 shadow-sm
               ${isPlaying ? 'bg-cap-green border-cap-green-deep' : 'bg-cap-muted border-cap-border'}
-              ${isMixing ? 'hidden' : ''}`}
+              ${isIdle || isMixing ? 'hidden' : ''}`}
             style={{ left: `calc(${progress * 100}% - 6px)` }}
           />
         </div>

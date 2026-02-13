@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Track, TrackState } from '../types';
 import { useMultiClick } from '../hooks/useMultiClick';
 import { getTrackBpm } from '../lib/tempoGrouping';
@@ -34,7 +35,7 @@ const stateAriaLabels: Record<TrackState, string> = {
   disabled:    '(unavailable)',
 };
 
-export function TrackButton({ track, state, height, onSingleClick, onDoubleClick, onTripleClick }: TrackButtonProps) {
+export const TrackButton = memo(function TrackButton({ track, state, height, onSingleClick, onDoubleClick, onTripleClick }: TrackButtonProps) {
   const handleClick = useMultiClick({
     delay: 300,
     onSingleClick,
@@ -58,7 +59,7 @@ export function TrackButton({ track, state, height, onSingleClick, onDoubleClick
         flex flex-col items-center justify-center gap-0.5
         text-center text-sm font-medium
         rounded-lg border-2
-        transition-all duration-150
+        transition-colors duration-150
         active:scale-95
         select-none
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cap-text focus-visible:ring-offset-2 focus-visible:ring-offset-cap-bg
@@ -73,4 +74,4 @@ export function TrackButton({ track, state, height, onSingleClick, onDoubleClick
       </span>
     </button>
   );
-}
+});

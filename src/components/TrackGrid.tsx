@@ -99,6 +99,15 @@ export function TrackGrid({
   onDoubleClick,
   onTripleClick,
 }: TrackGridProps) {
+  // Stable callback refs — prevents new function identity per render,
+  // so React.memo on TrackButton can skip re-renders.
+  const singleClickRef = useRef(onSingleClick);
+  singleClickRef.current = onSingleClick;
+  const doubleClickRef = useRef(onDoubleClick);
+  doubleClickRef.current = onDoubleClick;
+  const tripleClickRef = useRef(onTripleClick);
+  tripleClickRef.current = onTripleClick;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(600);
 
@@ -187,9 +196,9 @@ export function TrackGrid({
                   track={track}
                   state={getTrackState(track)}
                   height={buttonHeight}
-                  onSingleClick={() => onSingleClick(track)}
-                  onDoubleClick={() => onDoubleClick(track)}
-                  onTripleClick={() => onTripleClick(track)}
+                  onSingleClick={() => singleClickRef.current(track)}
+                  onDoubleClick={() => doubleClickRef.current(track)}
+                  onTripleClick={() => tripleClickRef.current(track)}
                 />
               </div>
             ))}

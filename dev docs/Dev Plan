@@ -261,15 +261,18 @@ Build a PWA beat-matched grid player for Capoeira classes per Spec v4.
 - [ ] **Beatmap creation guide (Notes #8):**
   - [ ] Documentation: how to create beat maps with Logic Pro
   - [ ] Principles for other DAWs (Ableton, Reaper, etc.)
+- [ ] **Help modal trigger button:**
+  - [ ] Persistent, visible button (not just the small “?” badge) to re-open the help/controls guide
+  - [ ] Consider adding to ControlBar or as a floating action button
 
 ---
 
 ## Current Status
-**Working on Notes v2 #3: remove status bar, merge BPM into single-row ControlBar for 1024×768 fit.**
+**Completed: Notes v2 #3 (single-row ControlBar), #6 (resolution warning), transport bar, tablet perf optimisations.**
 
 ## Notes Integration (original #1-#12)
 All 12 items from original `Notes for incorperation.md` have been incorporated:
-- #1 → Phase 6 (Transport scrub bar)
+- #1 → Phase 6 (Transport scrub bar) ✅
 - #2 → Phase 5 (Help / onboarding) ✅
 - #3 → Phase 5 (Queue-end behaviour — documents auto-advance basis) ✅
 - #4 → Phase 5 (Queue-end behaviour setting) ✅
@@ -285,7 +288,7 @@ All 12 items from original `Notes for incorperation.md` have been incorporated:
 ## Notes v2 Integration (#1-#6)
 - v2 #1 → Phase 6 (Horizontal scrolling for whole board, not per row)
 - v2 #2 → Phase 6 (Full IBM Carbon / WCAG AAA / Nielsen 10 audit from screenshots)
-- v2 #3 → **IN PROGRESS** (Remove status bar, merge BPM into ControlBar — single row saves ~56px)
+- v2 #3 → ✅ (Remove status bar, merge BPM into ControlBar — single row saves ~56px)
 - v2 #4 → Persistent spec (maintain efficient, documented, modular IBM Carbon / WCAG AAA / Nielsen 10 approach)
 - v2 #5 → Phase 6 (Refactor for modularity + old tablet efficiency)
-- v2 #6 → **IN PROGRESS** (Min res 1024×768, max 2560×1440, warning popup when too low)
+- v2 #6 → ✅ (Min res 1024×768, max 2560×1440, warning popup when too low)
