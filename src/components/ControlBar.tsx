@@ -142,7 +142,7 @@ export function ControlBar({
 
             {isSettingsOpen && (
               <div
-                className="absolute top-full left-0 mt-2 w-72 bg-cap-surface border border-cap-border rounded-xl shadow-xl z-50 overflow-hidden"
+                className="absolute top-full left-0 mt-2 w-72 bg-cap-surface border border-cap-border rounded-xl shadow-xl z-50 overflow-y-auto max-h-[calc(100vh-5rem)]"
                 role="menu"
                 aria-label="Settings"
               >
